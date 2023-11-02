@@ -1,5 +1,26 @@
-from .card import Card
-from ..game import Player, GameState
+class Card(object):
+    # Design principles for the cards:
+    # - Cards don't move themselves
+    # - Cards 'operate' on the game as a whole
+
+    name = ""
+    shortname = ""
+
+    # To be overwritten by child classes
+    cost = 0
+
+    # Card type
+    is_action = False
+    is_reaction = False
+    is_treasure = False
+    is_attack = False
+    is_victory = False
+
+    def __str__(self):
+        return self.shortname
+
+    def __repr__(self):
+        return self.shortname
 
 
 class EstateCard(Card):
@@ -8,21 +29,9 @@ class EstateCard(Card):
     cost = 2
     is_victory = True
 
-    def play(self, origin_player: Player, game_state: GameState):
-        raise ValueError(f"{self.name} can not be played")
 
-    def calc_vpoints(self, origin_player: Player, game_state: GameState):
-        return 1
-
-
-class Copper(Card):
+class CopperCard(Card):
     name = "Copper"
     shortname = "$1"
     cost = 0
     is_treasure = True
-
-    def play(self, origin_player: Player, game_state: GameState):
-
-
-    def calc_vpoints(self, origin_player: Player, game_state: GameState):
-        return 0

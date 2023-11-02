@@ -1,10 +1,11 @@
 import logging
-from game import GameState
+import dominionator.game as dominion
 
 
 def main():
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
-    game_state = GameState()
+    game = dominion.Game()
+    logging.info(game)
 
 
 if __name__ == '__main__':

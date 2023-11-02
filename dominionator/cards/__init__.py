@@ -1,2 +1,1 @@
-from card import Card
-from base_cards import *
+from dominionator.cards.base_cards import *
