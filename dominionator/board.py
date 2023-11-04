@@ -2,7 +2,7 @@ import random
 from enum import Enum
 import logging
 from logging import debug, info
-from typing import Callable, List
+from typing import Callable, List, Set
 
 # Don't import the parent cards package, as that refers to this module
 # Only import the cardlist itself, which has no dependencies
@@ -54,8 +54,8 @@ class Player(object):
             self._log(debug, f"deck size check. Has {len(self.deck)} needs {n_cards}")
             self._log(info, "shuffles discard under deck")
             random.shuffle(self.discard)
-        self.deck += self.discard
-        self.discard = []
+            self.deck += self.discard
+            self.discard = []
 
     def draw_from_deck(self, n_cards: int):
         self._shuffle_if_needed(n_cards)
@@ -63,15 +63,15 @@ class Player(object):
         self.hand += self.deck[0:n_cards]
         self.deck = self.deck[n_cards:]
 
-    def get_playable_action_cards(self):
+    def get_playable_action_cards(self) -> Set[str]:
         if self.phase != Phase.ACTION or self.actions < 1:
-            return None
-        return [card for card in self.hand if card.is_action]
+            return set()
+        return set([card.shortname for card in self.hand if card.is_action])
 
-    def get_playable_treasure_cards(self):
+    def get_playable_treasure_cards(self) -> Set[str]:
         if self.phase != Phase.BUY:
-            return None
-        return [card for card in self.hand if card.is_treasure]
+            return set()
+        return set([card.shortname for card in self.hand if card.is_treasure])
 
     def play_from_hand(self, shortname: str):
         # Plays a card from the players hand. It assumes the index of the card
@@ -110,7 +110,7 @@ class Player(object):
         self.buys = 1
         self.draw_from_deck(TURN_DRAW)
 
-    def all_cards(self):
+    def all_cards(self) -> List[dmcl.Card]:
         return self.hand + self.deck + self.discard + self.inplay
 
     def __str__(self) -> str:
@@ -134,8 +134,10 @@ class BoardState(object):
         self.active_player_i = 0
 
         self.supply = {
-            dmcl.CopperCard.shortname: [dmcl.CopperCard()] * 30,
+            dmcl.CopperCard.shortname: [dmcl.CopperCard()] * 46,  # TODO: 30 is for gold
             dmcl.EstateCard.shortname: [dmcl.EstateCard()] * 8,
+            dmcl.DuchyCard.shortname: [dmcl.DuchyCard()] * 8,
+            dmcl.ProvinceCard.shortname: [dmcl.ProvinceCard()] * 8,
             dmcl.MilitiaCard.shortname: [dmcl.MilitiaCard()] * 10,
         }
 
@@ -153,38 +155,43 @@ class BoardState(object):
         self.get_active_player().phase = Phase.WAITING
         self.active_player_i = (self.active_player_i + 1) % len(self.players)
 
-    def get_gainable_supply_cards_for_cost(self, cost_limit: int, exact=False):
+    def get_gainable_supply_cards_for_cost(self, cost_limit: int, exact=False) -> Set[str]:
         # This function is generic check for any type of gaining
-        # Todo: return None rather than [] if nothing available
-        buyable = [
-            supply_pile[0] for _, supply_pile in self.supply.items()
+        return set([
+            supply_pile[0].shortname for _, supply_pile in self.supply.items()
             if len(supply_pile) > 0 and (
                     (supply_pile[0].cost == cost_limit) or
                     (not exact and (supply_pile[0].cost < cost_limit))
             )
-        ]
-        if len(buyable) == 0:
-            return None
-        return buyable
+        ])
 
-    def get_buyable_supply_cards_for_active_player(self):
+    def get_buyable_supply_cards_for_active_player(self) -> Set[str]:
         player = self.get_active_player()
         if player.phase != Phase.BUY or player.buys <= 0:
-            return None
+            return set()
         return self.get_gainable_supply_cards_for_cost(player.coins)
 
     def gain_card_from_supply_to_active_player(self, shortname: str):
         player = self.get_active_player()
         logging.info(f"[Board]: {player.name} gains {shortname}")
-        # TODO: check there are enough cards
+        # The Game object must check card is gainable before calling
         card = self.supply[shortname].pop(0)
         player.discard += [card]
 
+    def is_end_condition(self):
+        # Find the empty supply piles
+        empty_supply = [
+            shortcode for shortcode, supply_pile in self.supply.items()
+            if len(supply_pile) == 0
+        ]
+        return (len(empty_supply) >= 3) or (dmcl.ProvinceCard.shortname in empty_supply)
+
     def __str__(self):
-        game_str = "<Supply>\n"
+        game_str = "\n<Supply>\n"
         for k, v in self.supply.items():
             game_str += f"{k}:{v}\n"
         for player in self.players:
+            game_str += '\n'
             if player.index == self.active_player_i:
                 game_str += '*'
             game_str += f"{str(player)}\n"

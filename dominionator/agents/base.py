@@ -3,6 +3,7 @@ import dominionator.board as dmb
 
 WAITING_INPUT = ''
 NO_SELECT = '-1'
+ALL_TREASURES = '$A'
 
 
 class Agent(object):

@@ -27,8 +27,20 @@ def _count_estate(player: dmb.Player, _board: dmb.BoardState):
     player.victory_points += 1
 
 
+def _count_duchy(player: dmb.Player, _board: dmb.BoardState):
+    # Estate has constant VP
+    player.victory_points += 3
+
+
+def _count_province(player: dmb.Player, _board: dmb.BoardState):
+    # Estate has constant VP
+    player.victory_points += 6
+
+
 _COUNTABLE_CARD_LIST = {
-    dmcl.EstateCard.shortname: _count_estate
+    dmcl.EstateCard.shortname: _count_estate,
+    dmcl.DuchyCard.shortname: _count_duchy,
+    dmcl.ProvinceCard.shortname: _count_province
 }
 
 

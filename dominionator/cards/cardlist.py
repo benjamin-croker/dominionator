@@ -30,6 +30,20 @@ class EstateCard(Card):
     is_victory = True
 
 
+class DuchyCard(Card):
+    name = "Duchy"
+    shortname = "V3"
+    cost = 5
+    is_victory = True
+
+
+class ProvinceCard(Card):
+    name = "Province"
+    shortname = "V6"
+    cost = 8
+    is_victory = True
+
+
 class CopperCard(Card):
     name = "Copper"
     shortname = "$1"
@@ -39,7 +53,7 @@ class CopperCard(Card):
 
 class MilitiaCard(Card):
     name = "Militia"
-    shortname = "Ml"
+    shortname = "ML"
     cost = 4
     is_action = True
     is_attack = True

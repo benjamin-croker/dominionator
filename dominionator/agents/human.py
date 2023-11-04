@@ -1,6 +1,8 @@
+from typing import List
+import logging
+
 import dominionator.board as dmb
 import dominionator.agents.base as dma_base
-from typing import List
 
 
 class HumanAgent(dma_base.Agent):
@@ -11,13 +13,14 @@ class HumanAgent(dma_base.Agent):
     def _generic_input(instruction: str, allowed: List[str]):
         selected = dma_base.WAITING_INPUT  # assumes this is never a valid input
         while selected not in allowed:
-            selected = input(f"{instruction}:{allowed}")
+            selected = input(f"{instruction}:{allowed} > ")
         return selected
 
     def get_input_play_card_from_hand(self,
                                       player: dmb.Player,
                                       board: dmb.BoardState,
                                       allowed: List[str]) -> str:
+        logging.info(board)
         return self._generic_input(f"{player.name} PLAY_FROM_HAND", allowed)
 
     def get_input_discard_card_from_hand(self,
