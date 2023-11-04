@@ -44,7 +44,7 @@ class Player(object):
 
         # This will start the game by shuffling all cards and drawing 5
         self.discard = start_cards
-        self.clean_up()
+        self.start_cleanup_phase()
 
     def _log(self, logfn: Callable[[str], None], message: str):
         logfn(f"[{self.name}]: {message}")
@@ -73,7 +73,7 @@ class Player(object):
             return None
         return [card for card in self.hand if card.is_treasure]
 
-    def play_from_hand(self, shortname: str) -> dmcl.Card:
+    def play_from_hand(self, shortname: str):
         # Plays a card from the players hand. It assumes the index of the card
         # selected via another method. Returns a card for the GameState to handle.
 
@@ -85,7 +85,6 @@ class Player(object):
         hand_i = [card.shortname for card in self.hand].index(shortname)
         played_card = self.hand.pop(hand_i)
         self.inplay += [played_card]
-        return played_card
 
     def start_action_phase(self):
         self._log(info, f"starts action phase")
@@ -175,9 +174,11 @@ class BoardState(object):
         return self.get_gainable_supply_cards_for_cost(player.coins)
 
     def gain_card_from_supply_to_active_player(self, shortname: str):
+        player = self.get_active_player()
+        logging.info(f"[Board]: {player.name} gains {shortname}")
         # TODO: check there are enough cards
         card = self.supply[shortname].pop(0)
-        self.get_active_player().discard += [card]
+        player.discard += [card]
 
     def __str__(self):
         game_str = "<Supply>\n"

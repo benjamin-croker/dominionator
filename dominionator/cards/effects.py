@@ -1,3 +1,4 @@
+import logging
 import dominionator.board as dmb
 import dominionator.cards.cardlist as dmcl
 from typing import Callable

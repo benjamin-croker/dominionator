@@ -21,9 +21,15 @@ class Game(object):
         fn = dmce.get_count_card_fn(card.shortname)
         fn(player, self.board)
 
-    def play_action_treasure(self, card: dmcl.Card, player: dmb.Player):
-        fn = dmce.get_play_card_fn(card.shortname)
+    def play_action_treasure(self, shortname, player: dmb.Player):
+        logging.info(f"[GAME]: {player.name} plays {shortname}")
+        player.play_from_hand(shortname)
+        fn = dmce.get_play_card_fn(shortname)
         fn(player, self.board)
+
+    def buy_card(self, shortname: str, player: dmb.Player):
+        logging.info(f"[GAME]: {player.name} buys {shortname}")
+        self.board.gain_card_from_supply_to_active_player(shortname)
 
     def recount_vp(self):
         [
@@ -53,7 +59,7 @@ class Game(object):
             # no effect on action if playing treasures
             if player.phase == dmb.Phase.ACTION:
                 player.actions -= 1
-            self.play_action_treasure(player.play_from_hand(selected), player)
+            self.play_action_treasure(selected, player)
 
     def _player_buy_loop(self, player, agent):
         buyable_cards = self.board.get_buyable_supply_cards_for_active_player()
@@ -65,7 +71,7 @@ class Game(object):
             if selected == dma.NO_SELECT:
                 break
             player.buys -= 1
-            self.board.gain_card_from_supply_to_active_player(selected)
+            self.buy_card(selected, player)
 
     def _active_player_turn_loop(self):
         player = self.board.get_active_player()
