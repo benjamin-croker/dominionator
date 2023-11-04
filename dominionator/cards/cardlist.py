@@ -23,6 +23,7 @@ class Card(object):
         return self.shortname
 
 
+# --------- Victory ---------
 class EstateCard(Card):
     name = "Estate"
     shortname = "V1"
@@ -44,6 +45,7 @@ class ProvinceCard(Card):
     is_victory = True
 
 
+# --------- Treasures ---------
 class CopperCard(Card):
     name = "Copper"
     shortname = "$1"
@@ -51,9 +53,31 @@ class CopperCard(Card):
     is_treasure = True
 
 
+class SilverCard(Card):
+    name = "Silver"
+    shortname = "$2"
+    cost = 3
+    is_treasure = True
+
+
+class GoldCard(Card):
+    name = "Gold"
+    shortname = "$3"
+    cost = 6
+    is_treasure = True
+
+
+# --------- Actions ---------
 class MilitiaCard(Card):
     name = "Militia"
     shortname = "ML"
     cost = 4
     is_action = True
     is_attack = True
+
+
+class MerchantCard(Card):
+    name = "Merchant"
+    shortname = "MC"
+    cost = 3
+    is_action = True

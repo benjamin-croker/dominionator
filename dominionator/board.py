@@ -59,6 +59,11 @@ class Player(object):
 
     def draw_from_deck(self, n_cards: int):
         self._shuffle_if_needed(n_cards)
+
+        if len(self.deck) < n_cards:
+            self._log(debug, f"less than {n_cards} available")
+            n_cards = len(self.deck)
+
         self._log(info, f"draws {n_cards} cards")
         self.hand += self.deck[0:n_cards]
         self.deck = self.deck[n_cards:]
@@ -86,6 +91,16 @@ class Player(object):
         played_card = self.hand.pop(hand_i)
         self.inplay += [played_card]
 
+    def count_inplay(self, shortname: str):
+        return len([
+            card.shortname for card in self.inplay if card.shortname == shortname
+        ])
+
+    def reset_resources(self):
+        self.actions = 1
+        self.coins = 0
+        self.buys = 1
+
     def start_action_phase(self):
         self._log(info, f"starts action phase")
         self.phase = Phase.ACTION
@@ -104,10 +119,7 @@ class Player(object):
         self.discard += self.inplay
         self.inplay = []
 
-        # Reset and draw 5 cards
-        self.actions = 1
-        self.coins = 0
-        self.buys = 1
+        # Draw 5 cards
         self.draw_from_deck(TURN_DRAW)
 
     def all_cards(self) -> List[dmcl.Card]:
@@ -117,8 +129,7 @@ class Player(object):
         player_str = (
             f"<{self.name}> @{self.actions} ${self.coins} &{self.buys} ^{self.victory_points}\n"
             f"inplay: {self.inplay} hand: {self.hand}\n"
-            f"deck: -->{self.deck}\n"
-            f"discard: {self.discard}<--"
+            f"{self.discard}<--discard | deck-->{self.deck}\n"
         )
         return player_str
 
@@ -134,11 +145,13 @@ class BoardState(object):
         self.active_player_i = 0
 
         self.supply = {
-            dmcl.CopperCard.shortname: [dmcl.CopperCard()] * 46,  # TODO: 30 is for gold
+            dmcl.CopperCard.shortname: [dmcl.CopperCard()] * 46,
+            dmcl.SilverCard.shortname: [dmcl.SilverCard()] * 40,
+            dmcl.GoldCard.shortname: [dmcl.GoldCard()] * 30,
             dmcl.EstateCard.shortname: [dmcl.EstateCard()] * 8,
             dmcl.DuchyCard.shortname: [dmcl.DuchyCard()] * 8,
             dmcl.ProvinceCard.shortname: [dmcl.ProvinceCard()] * 8,
-            dmcl.MilitiaCard.shortname: [dmcl.MilitiaCard()] * 10,
+            dmcl.MerchantCard.shortname: [dmcl.MerchantCard()] * 10,
         }
 
         self.trash = []
@@ -189,7 +202,8 @@ class BoardState(object):
     def __str__(self):
         game_str = "\n<Supply>\n"
         for k, v in self.supply.items():
-            game_str += f"{k}:{v}\n"
+            game_str += f"{k}:{len(v)}|"
+        game_str += '\n'
         for player in self.players:
             game_str += '\n'
             if player.index == self.active_player_i:

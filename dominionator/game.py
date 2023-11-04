@@ -104,6 +104,8 @@ class Game(object):
         player = self.board.get_active_player()
         agent = self.get_active_player_agent()
 
+        player.reset_resources()
+
         # Action phase. This loop enacts playing the cards
         player.start_action_phase()
         self._player_play_action_loop(player, agent)
