@@ -6,12 +6,12 @@ from typing import Callable
 CardFunction = Callable[[dmb.Player, dmb.BoardState], None]
 
 
-def _play_copper(player: dmb.Player, _board_state: dmb.BoardState):
+def _play_copper(player: dmb.Player, _board: dmb.BoardState):
     # Board state is unaffected besides the player
     player.coins += 1
 
 
-def _play_militia(player: dmb.Player, board_state: dmb.BoardState):
+def _play_militia(player: dmb.Player, board: dmb.BoardState):
     raise NotImplementedError()
 
 
@@ -21,7 +21,7 @@ _PLAYABLE_CARD_LIST = {
 }
 
 
-def _count_estate(player: dmb.Player, _board_state: dmb.BoardState):
+def _count_estate(player: dmb.Player, _board: dmb.BoardState):
     # Estate has constant VP
     player.victory_points += 1
 

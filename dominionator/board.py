@@ -1,14 +1,22 @@
 import random
-
+from enum import Enum
 import logging
 from logging import debug, info
 from typing import Callable, List
+
 # Don't import the parent cards package, as that refers to this module
 # Only import the cardlist itself, which has no dependencies
 import dominionator.cards.cardlist as dmcl
 
 START_CARDS = tuple(3 * [dmcl.EstateCard] + 7 * [dmcl.CopperCard])
 TURN_DRAW = 5
+
+
+class Phase(Enum):
+    WAITING = 0
+    ACTION = 1
+    BUY = 2
+    CLEANUP = 3
 
 
 class Player(object):
@@ -29,6 +37,7 @@ class Player(object):
         self.coins = 0
         self.actions = 0
         self.buys = 0
+        self.phase = Phase.WAITING
 
         # Set by the game engine running a count
         self.victory_points = 0
@@ -54,6 +63,16 @@ class Player(object):
         self.hand += self.deck[0:n_cards]
         self.deck = self.deck[n_cards:]
 
+    def get_playable_action_cards(self):
+        if self.phase != Phase.ACTION or self.actions < 1:
+            return None
+        return [card for card in self.hand if card.is_action]
+
+    def get_playable_treasure_cards(self):
+        if self.phase != Phase.BUY:
+            return None
+        return [card for card in self.hand if card.is_treasure]
+
     def play_from_hand(self, shortname: str) -> dmcl.Card:
         # Plays a card from the players hand. It assumes the index of the card
         # selected via another method. Returns a card for the GameState to handle.
@@ -68,8 +87,17 @@ class Player(object):
         self.inplay += [played_card]
         return played_card
 
-    def clean_up(self):
+    def start_action_phase(self):
+        self._log(info, f"starts action phase")
+        self.phase = Phase.ACTION
+
+    def start_buy_phase(self):
+        self._log(info, f"starts buy phase")
+        self.phase = Phase.BUY
+
+    def start_cleanup_phase(self):
         self._log(info, f"cleans up")
+        self.phase = Phase.CLEANUP
 
         # Put hand and cards in play into the discard pile
         self.discard += self.hand
@@ -114,13 +142,42 @@ class BoardState(object):
 
         self.trash = []
 
-    def active_player(self):
+    def get_active_player(self):
         return self.players[self.active_player_i]
 
-    def other_players(self, player: Player):
+    def get_other_players(self, player: Player):
         # returns other players in clockwise play order
         i = player.index
         return self.players[i + 1:] + self.players[:i]
+
+    def advance_turn_to_next_player(self):
+        self.get_active_player().phase = Phase.WAITING
+        self.active_player_i = (self.active_player_i + 1) % len(self.players)
+
+    def get_gainable_supply_cards_for_cost(self, cost_limit: int, exact=False):
+        # This function is generic check for any type of gaining
+        # Todo: return None rather than [] if nothing available
+        buyable = [
+            supply_pile[0] for _, supply_pile in self.supply.items()
+            if len(supply_pile) > 0 and (
+                    (supply_pile[0].cost == cost_limit) or
+                    (not exact and (supply_pile[0].cost < cost_limit))
+            )
+        ]
+        if len(buyable) == 0:
+            return None
+        return buyable
+
+    def get_buyable_supply_cards_for_active_player(self):
+        player = self.get_active_player()
+        if player.phase != Phase.BUY or player.buys <= 0:
+            return None
+        return self.get_gainable_supply_cards_for_cost(player.coins)
+
+    def gain_card_from_supply_to_active_player(self, shortname: str):
+        # TODO: check there are enough cards
+        card = self.supply[shortname].pop(0)
+        self.get_active_player().discard += [card]
 
     def __str__(self):
         game_str = "<Supply>\n"
