@@ -25,7 +25,7 @@ class Card(object):
 
 class EstateCard(Card):
     name = "Estate"
-    shortname = "E1"
+    shortname = "V1"
     cost = 2
     is_victory = True
 
@@ -35,3 +35,11 @@ class CopperCard(Card):
     shortname = "$1"
     cost = 0
     is_treasure = True
+
+
+class MilitiaCard(Card):
+    name = "Militia"
+    shortname = "Ml"
+    cost = 4
+    is_action = True
+    is_attack = True
