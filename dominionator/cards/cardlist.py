@@ -11,7 +11,8 @@ class Card(object):
 
     # Card type
     is_action = False
-    is_reaction = False
+    # The moat is the only reaction in the base set, and reacts to attacks
+    is_attack_reaction = False
     is_treasure = False
     is_attack = False
     is_victory = False
@@ -81,3 +82,11 @@ class MerchantCard(Card):
     shortname = "MC"
     cost = 3
     is_action = True
+
+
+class MoatCard(Card):
+    name = "Moat"
+    shortname = "MO"
+    cost = 2
+    is_action = True
+    is_attack_reaction = True

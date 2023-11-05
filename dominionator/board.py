@@ -73,23 +73,34 @@ class Player(object):
             return set()
         return set([card.shortname for card in self.hand if card.is_action])
 
+    def get_attack_reaction_cards(self) -> Set[str]:
+        # Just the moat in the base set
+        return set([card.shortname for card in self.hand if card.is_attack_reaction])
+
     def get_playable_treasure_cards(self) -> Set[str]:
         if self.phase != Phase.BUY:
             return set()
         return set([card.shortname for card in self.hand if card.is_treasure])
 
     def play_from_hand(self, shortname: str):
-        # Plays a card from the players hand. It assumes the index of the card
-        # selected via another method. Returns a card for the GameState to handle.
+        # Plays a card from the players hand. It assumes the card is selected via
+        # another method. Returns a card for the GameState or card effect function
+        # to handle.
 
-        # Selects a card with the selected name. This method is used as it will
+        # Cards are selected by name, not hand position. This method is used as it will
         # make interfacing with an automated agent easier, by reducing the action
         # space to selecting one of the kingdom cards to play, instead of selecting
         # an index from a hand which could be an arbitrary size.
-
+        self._log(info, f"plays {shortname}")
         hand_i = [card.shortname for card in self.hand].index(shortname)
         played_card = self.hand.pop(hand_i)
         self.inplay += [played_card]
+
+    def discard_from_hand(self, shortname: str):
+        self._log(info, f"discards {shortname}")
+        hand_i = [card.shortname for card in self.hand].index(shortname)
+        discarded_card = self.hand.pop(hand_i)
+        self.discard += [discarded_card]
 
     def count_inplay(self, shortname: str):
         return len([
@@ -186,7 +197,7 @@ class BoardState(object):
 
     def gain_card_from_supply_to_active_player(self, shortname: str):
         player = self.get_active_player()
-        logging.info(f"[Board]: {player.name} gains {shortname}")
+        logging.info(f"[BOARD]: {player.name} gains {shortname}")
         # The Game object must check card is gainable before calling
         card = self.supply[shortname].pop(0)
         player.discard += [card]

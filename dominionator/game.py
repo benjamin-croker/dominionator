@@ -17,7 +17,7 @@ class Game(object):
 
     def _count_vp(self, shortname: str, player: dmb.Player):
         fn = dmce.get_count_card_fn(shortname)
-        fn(player, self.board)
+        fn(player, self.board, self.agents)
 
     def recount_vp(self):
         for player in self.board.players:
@@ -29,13 +29,13 @@ class Game(object):
             ]
 
     def play_action_treasure(self, shortname, player: dmb.Player):
-        logging.info(f"[GAME]: {player.name} plays {shortname}")
         player.play_from_hand(shortname)
         fn = dmce.get_play_card_fn(shortname)
-        fn(player, self.board)
+        fn(player, self.board, self.agents)
 
     def buy_card(self, shortname: str, player: dmb.Player):
         logging.info(f"[GAME]: {player.name} buys {shortname}")
+        player.coins -= self.board.supply[shortname][0].cost
         self.board.gain_card_from_supply_to_active_player(shortname)
 
     def get_active_player_agent(self):
