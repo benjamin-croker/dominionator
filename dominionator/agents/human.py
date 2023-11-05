@@ -27,28 +27,33 @@ class HumanAgent(dma_base.Agent):
                                          player: dmb.Player,
                                          board: dmb.BoardState,
                                          allowed: List[str]) -> str:
+        logging.info(board)
         return self._generic_input(f"{player.name} DISCARD_FROM_HAND", allowed)
 
     def get_input_trash_card_from_hand(self,
                                        player: dmb.Player,
                                        board: dmb.BoardState,
                                        allowed: List[str]) -> str:
+        logging.info(board)
         return self._generic_input(f"{player.name} TRASH_FROM_HAND", allowed)
 
     def get_input_reveal_card_from_hand(self,
                                         player: dmb.Player,
                                         board: dmb.BoardState,
                                         allowed: List[str]) -> str:
+        logging.info(board)
         return self._generic_input(f"{player.name} REVEAL_FROM_HAND", allowed)
 
     def get_input_buy_card_from_supply(self,
                                        player: dmb.Player,
                                        board: dmb.BoardState,
                                        allowed: List[str]) -> str:
+        logging.info(board)
         return self._generic_input(f"{player.name} BUY_FROM_SUPPLY", allowed)
 
     def get_input_gain_card_from_supply(self,
                                         player: dmb.Player,
                                         board: dmb.BoardState,
                                         allowed: List[str]) -> str:
+        logging.info(board)
         return self._generic_input(f"{player.name} GAIN_FROM_SUPPLY", allowed)

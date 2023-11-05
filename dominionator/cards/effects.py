@@ -100,7 +100,7 @@ def _play_militia(player: dmb.Player,
     for attacked_player in _check_attack_reaction(player, board, agents):
         while len(attacked_player.hand) > 3:
             selected = agents[attacked_player.name].get_input_discard_card_from_hand(
-                attacked_player, board, attacked_player.hand
+                attacked_player, board, list(attacked_player.get_discardable_cards())
             )
             attacked_player.discard_from_hand(selected)
 

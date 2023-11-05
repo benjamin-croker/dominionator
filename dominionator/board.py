@@ -8,7 +8,7 @@ from typing import Callable, List, Set
 # Only import the cardlist itself, which has no dependencies
 import dominionator.cards.cardlist as dmcl
 
-START_CARDS = tuple(3 * [dmcl.EstateCard] + 7 * [dmcl.CopperCard])
+START_CARDS = tuple(5 * [dmcl.MoatCard] + 5 * [dmcl.MilitiaCard])
 TURN_DRAW = 5
 
 
@@ -81,6 +81,9 @@ class Player(object):
         if self.phase != Phase.BUY:
             return set()
         return set([card.shortname for card in self.hand if card.is_treasure])
+
+    def get_discardable_cards(self) -> Set[str]:
+        return set([card.shortname for card in self.hand])
 
     def play_from_hand(self, shortname: str):
         # Plays a card from the players hand. It assumes the card is selected via
