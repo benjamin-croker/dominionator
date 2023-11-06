@@ -8,7 +8,7 @@ from typing import Callable, List, Set
 # Only import the cardlist itself, which has no dependencies
 import dominionator.cards.cardlist as dmcl
 
-START_CARDS = tuple(5 * [dmcl.CurseCard] + 5 * [dmcl.MilitiaCard])
+START_CARDS = tuple(5 * [dmcl.CurseCard] + 5 * [dmcl.CellarCard])
 TURN_DRAW = 5
 
 
@@ -217,9 +217,8 @@ class BoardState(object):
         game_str = "\n<Supply>\n"
         for k, v in self.supply.items():
             game_str += f"{k}:{len(v)}|"
-        game_str += '\n'
+        game_str += '\n\n'
         for player in self.players:
-            game_str += '\n'
             if player.index == self.active_player_i:
                 game_str += '*'
             game_str += f"{str(player)}\n"

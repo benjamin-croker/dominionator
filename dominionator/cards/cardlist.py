@@ -78,18 +78,10 @@ class GoldCard(Card):
 
 
 # --------- Actions ---------
-class MilitiaCard(Card):
-    name = "Militia"
-    shortname = "ML"
-    cost = 4
-    is_action = True
-    is_attack = True
-
-
-class MerchantCard(Card):
-    name = "Merchant"
-    shortname = "MC"
-    cost = 3
+class CellarCard(Card):
+    name = "Cellar"
+    shortname = "CL"
+    cost = 2
     is_action = True
 
 
@@ -99,3 +91,18 @@ class MoatCard(Card):
     cost = 2
     is_action = True
     is_attack_reaction = True
+
+
+class MerchantCard(Card):
+    name = "Merchant"
+    shortname = "MC"
+    cost = 3
+    is_action = True
+
+
+class MilitiaCard(Card):
+    name = "Militia"
+    shortname = "ML"
+    cost = 4
+    is_action = True
+    is_attack = True

@@ -11,8 +11,8 @@ CardFunction = Callable[
 
 # --------- Victory ---------
 def _count_curse(player: dmb.Player,
-                  _board: dmb.BoardState,
-                  _agents: Dict[str, dma.Agent]):
+                 _board: dmb.BoardState,
+                 _agents: Dict[str, dma.Agent]):
     # Curse has constant VP
     player.victory_points -= 1
 
@@ -90,7 +90,7 @@ def _check_attack_reaction(player: dmb.Player,
     # This could include playing the card.
     other_player_revealed = [
         agents[p.name].get_input_reveal_card_from_hand(
-            p, board, allowed=list(p.get_attack_reaction_cards()) + [dma.NO_SELECT]
+            p, board, allowed=p.get_attack_reaction_cards().union({dma.NO_SELECT})
         ) for p in other_players
     ]
 
@@ -101,25 +101,27 @@ def _check_attack_reaction(player: dmb.Player,
     ]
 
 
-def _play_militia(player: dmb.Player,
-                  board: dmb.BoardState,
-                  agents: Dict[str, dma.Agent]):
-    player.coins += 2
-    for attacked_player in _check_attack_reaction(player, board, agents):
-        while len(attacked_player.hand) > 3:
-            selected = agents[attacked_player.name].get_input_discard_card_from_hand(
-                attacked_player, board, list(attacked_player.get_discardable_cards())
-            )
-            attacked_player.discard_from_hand(selected)
+# --------- Actions $2 ---------
 
-
-def _play_merchant(player: dmb.Player,
-                   _board: dmb.BoardState,
-                   _agents: Dict[str, dma.Agent]):
-    player.draw_from_deck(1)
+def _play_cellar(player: dmb.Player,
+                 board: dmb.BoardState,
+                 agents: Dict[str, dma.Agent]):
     player.actions += 1
-    # The effect where +$1 is granted the first time a silver is played
-    # is handled in the routine for playing silver
+    n_discarded = 0
+    discardable = player.get_discardable_cards()
+    selected = dma.WAITING_INPUT
+
+    while len(discardable) > 0 and selected != dma.NO_SELECT:
+        selected = agents[player.name].get_input_discard_card_from_hand(
+            player, board, discardable.union({dma.NO_SELECT})
+        )
+        if selected == dma.NO_SELECT:
+            break
+        player.discard_from_hand(selected)
+        n_discarded += 1
+        discardable = player.get_discardable_cards()
+
+    player.draw_from_deck(n_discarded)
 
 
 def _play_moat(player: dmb.Player,
@@ -129,13 +131,37 @@ def _play_moat(player: dmb.Player,
     player.draw_from_deck(2)
 
 
+# --------- Actions $2 ---------
+def _play_merchant(player: dmb.Player,
+                   _board: dmb.BoardState,
+                   _agents: Dict[str, dma.Agent]):
+    player.draw_from_deck(1)
+    player.actions += 1
+    # The effect where +$1 is granted the first time a silver is played
+    # is handled in the routine for playing silver
+
+
+# --------- Actions $4---------
+def _play_militia(player: dmb.Player,
+                  board: dmb.BoardState,
+                  agents: Dict[str, dma.Agent]):
+    player.coins += 2
+    for attacked_player in _check_attack_reaction(player, board, agents):
+        while len(attacked_player.hand) > 3:
+            selected = agents[attacked_player.name].get_input_discard_card_from_hand(
+                attacked_player, board, attacked_player.get_discardable_cards()
+            )
+            attacked_player.discard_from_hand(selected)
+
+
 _PLAYABLE_CARD_LIST = {
     dmcl.CopperCard.shortname: _play_copper,
     dmcl.SilverCard.shortname: _play_silver,
     dmcl.GoldCard.shortname: _play_gold,
-    dmcl.MilitiaCard.shortname: _play_militia,
-    dmcl.MerchantCard.shortname: _play_merchant,
+    dmcl.CellarCard.shortname: _play_cellar,
     dmcl.MoatCard.shortname: _play_moat,
+    dmcl.MerchantCard.shortname: _play_merchant,
+    dmcl.MilitiaCard.shortname: _play_militia,
 }
 
 

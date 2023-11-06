@@ -48,7 +48,7 @@ class Game(object):
         playable_cards = player.get_playable_action_cards()
 
         while len(playable_cards) > 0:
-            allowed = list(playable_cards) + [dma.NO_SELECT]
+            allowed = playable_cards.union({dma.NO_SELECT})
             selected = agent.get_input_play_card_from_hand(
                 player=player, board=self.board, allowed=allowed
             )
@@ -71,7 +71,7 @@ class Game(object):
                 # keep getting the first treasure until we run out
                 selected = list(playable_cards)[0]
             else:
-                allowed = list(playable_cards) + [dma.NO_SELECT, dma.ALL_TREASURES]
+                allowed = playable_cards.union({dma.NO_SELECT, dma.ALL_TREASURES})
                 selected = agent.get_input_play_card_from_hand(
                     player=player, board=self.board, allowed=allowed
                 )
@@ -90,7 +90,7 @@ class Game(object):
         logging.debug(f"[GAME]: {player.name} buy loop. Buyable: {buyable_cards}")
 
         while len(buyable_cards) > 0:
-            allowed = list(buyable_cards) + [dma.NO_SELECT]
+            allowed = buyable_cards.union({dma.NO_SELECT})
             selected = agent.get_input_buy_card_from_supply(
                 player=player, board=self.board, allowed=allowed
             )
