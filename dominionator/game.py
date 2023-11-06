@@ -28,15 +28,15 @@ class Game(object):
                 if card.is_victory or card.is_curse
             ]
 
-    def play_action_treasure(self, shortname, player: dmb.Player):
+    def play_action_treasure(self, player: dmb.Player, shortname: str):
         player.play_from_hand(shortname)
         fn = dmce.get_play_card_fn(shortname)
         fn(player, self.board, self.agents)
 
-    def buy_card(self, shortname: str, player: dmb.Player):
+    def buy_card(self, player: dmb.Player, shortname: str):
         logging.info(f"[GAME]: {player.name} buys {shortname}")
         player.coins -= self.board.supply[shortname][0].cost
-        self.board.gain_card_from_supply_to_active_player(shortname)
+        self.board.gain_card_from_supply_to_player(player, shortname)
 
     def get_active_player_agent(self):
         return self.agents[self.board.get_active_player().name]
@@ -56,7 +56,7 @@ class Game(object):
                 break
             player.actions -= 1
 
-            self.play_action_treasure(selected, player)
+            self.play_action_treasure(player, selected)
             playable_cards = player.get_playable_action_cards()
 
     def _player_play_treasure_loop(self,
@@ -82,7 +82,7 @@ class Game(object):
                 autoplay_treasures = True
                 continue
             else:
-                self.play_action_treasure(selected, player)
+                self.play_action_treasure(player, selected)
                 playable_cards = player.get_playable_treasure_cards()
 
     def _player_buy_loop(self, player, agent):
@@ -97,7 +97,7 @@ class Game(object):
             if selected == dma.NO_SELECT:
                 break
             player.buys -= 1
-            self.buy_card(selected, player)
+            self.buy_card(player, selected)
             buyable_cards = self.board.get_buyable_supply_cards_for_active_player()
 
     def active_player_turn_loop(self):

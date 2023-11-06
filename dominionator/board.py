@@ -8,7 +8,7 @@ from typing import Callable, List, Set
 # Only import the cardlist itself, which has no dependencies
 import dominionator.cards.cardlist as dmcl
 
-START_CARDS = tuple(5 * [dmcl.CurseCard] + 5 * [dmcl.CellarCard])
+START_CARDS = tuple(5 * [dmcl.CurseCard] + 5 * [dmcl.ChapelCard])
 TURN_DRAW = 5
 
 
@@ -17,6 +17,13 @@ class Phase(Enum):
     ACTION = 1
     BUY = 2
     CLEANUP = 3
+
+
+class Location(Enum):
+    HAND = 0
+    DECK = 1
+    DISCARD = 2
+    INPLAY = 3
 
 
 class Player(object):
@@ -85,6 +92,9 @@ class Player(object):
     def get_discardable_cards(self) -> Set[str]:
         return set([card.shortname for card in self.hand])
 
+    def get_trashable_cards(self) -> Set[str]:
+        return set([card.shortname for card in self.hand])
+
     def play_from_hand(self, shortname: str):
         # Plays a card from the players hand. It assumes the card is selected via
         # another method. Returns a card for the GameState or card effect function
@@ -104,6 +114,30 @@ class Player(object):
         hand_i = [card.shortname for card in self.hand].index(shortname)
         discarded_card = self.hand.pop(hand_i)
         self.discard += [discarded_card]
+
+    def trash_from_hand(self, shortname: str) -> dmcl.Card:
+        # This method must be called by the Board, which places the card in the trash
+        self._log(info, f"trashes {shortname}")
+        hand_i = [card.shortname for card in self.hand].index(shortname)
+        return self.hand.pop(hand_i)
+
+    def gain_from_supply(self, card: dmcl.Card, location: Location):
+        # This method must be called by the Board which takes the card off the supply
+        self._log(info, f"gains {card.shortname} to {location}")
+        if location == Location.DISCARD:
+            self.discard += [card]
+        elif location == Location.DECK:
+            # goes on the top of deck
+            self.deck = [card] + self.deck
+        elif location == Location.HAND:
+            self.hand += [card]
+        elif location == Location.INPLAY:
+            self.inplay += [card]
+
+    def move_from_hand_to_top_of_deck(self, shortname: str):
+        self._log(info, f"moves {shortname} to deck")
+        hand_i = [card.shortname for card in self.hand].index(shortname)
+        self.deck = [self.hand.pop(hand_i)] + self.deck
 
     def count_inplay(self, shortname: str):
         return len([
@@ -198,12 +232,21 @@ class BoardState(object):
             return set()
         return self.get_gainable_supply_cards_for_cost(player.coins)
 
-    def gain_card_from_supply_to_active_player(self, shortname: str):
-        player = self.get_active_player()
+    def gain_card_from_supply_to_player(self,
+                                        player: Player,
+                                        shortname: str,
+                                        gain_to=Location.DISCARD):
         logging.info(f"[BOARD]: {player.name} gains {shortname}")
         # The Game object must check card is gainable before calling
         card = self.supply[shortname].pop(0)
+        # TODO: pass this to the player to handle
+        player.gain_from_supply()
         player.discard += [card]
+
+    def trash_card_from_player_hand(self, player: Player, shortname: str):
+        # The player removes the card from their own hand and returns it
+        # for the Board to trash
+        self.trash += [player.trash_from_hand(shortname)]
 
     def is_end_condition(self):
         # Find the empty supply piles
@@ -219,7 +262,8 @@ class BoardState(object):
             game_str += f"{k}:{len(v)}|"
         game_str += '\n\n'
         for player in self.players:
+            pre = ''
             if player.index == self.active_player_i:
-                game_str += '*'
-            game_str += f"{str(player)}\n"
+                pre = '*'
+            game_str += f"{pre}{str(player)}\n"
         return game_str

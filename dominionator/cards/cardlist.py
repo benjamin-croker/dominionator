@@ -85,6 +85,13 @@ class CellarCard(Card):
     is_action = True
 
 
+class ChapelCard(Card):
+    name = "Chapel"
+    shortname = "CH"
+    cost = 2
+    is_action = True
+
+
 class MoatCard(Card):
     name = "Moat"
     shortname = "MO"

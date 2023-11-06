@@ -124,6 +124,24 @@ def _play_cellar(player: dmb.Player,
     player.draw_from_deck(n_discarded)
 
 
+def _play_chapel(player: dmb.Player,
+                 board: dmb.BoardState,
+                 agents: Dict[str, dma.Agent]):
+    n_trashed = 0
+    trashable = player.get_trashable_cards()
+    selected = dma.WAITING_INPUT
+
+    while n_trashed < 4 and selected != dma.NO_SELECT:
+        selected = agents[player.name].get_input_trash_card_from_hand(
+            player, board, trashable.union({dma.NO_SELECT})
+        )
+        if selected == dma.NO_SELECT:
+            break
+        board.trash_card_from_player_hand(player, selected)
+        n_trashed += 1
+        trashable = player.get_trashable_cards()
+
+
 def _play_moat(player: dmb.Player,
                _board: dmb.BoardState,
                _agents: Dict[str, dma.Agent]):
@@ -159,6 +177,7 @@ _PLAYABLE_CARD_LIST = {
     dmcl.SilverCard.shortname: _play_silver,
     dmcl.GoldCard.shortname: _play_gold,
     dmcl.CellarCard.shortname: _play_cellar,
+    dmcl.ChapelCard.shortname: _play_chapel,
     dmcl.MoatCard.shortname: _play_moat,
     dmcl.MerchantCard.shortname: _play_merchant,
     dmcl.MilitiaCard.shortname: _play_militia,
