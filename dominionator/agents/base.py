@@ -36,6 +36,13 @@ class Agent(object):
         # Returns card shortname
         raise NotImplementedError()
 
+    def get_input_topdeck_card_from_discard(self,
+                                            player: dmb.Player,
+                                            board: dmb.BoardState,
+                                            allowed: Set[str]) -> str:
+        # Returns card shortname
+        raise NotImplementedError()
+
     def get_input_buy_card_from_supply(self,
                                        player: dmb.Player,
                                        board: dmb.BoardState,

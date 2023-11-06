@@ -100,6 +100,13 @@ class MoatCard(Card):
     is_attack_reaction = True
 
 
+class HarbingerCard(Card):
+    name = "Harbinger"
+    shortname = "HR"
+    cost = 3
+    is_action = True
+
+
 class MerchantCard(Card):
     name = "Merchant"
     shortname = "MC"

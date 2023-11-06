@@ -149,7 +149,23 @@ def _play_moat(player: dmb.Player,
     player.draw_from_deck(2)
 
 
-# --------- Actions $2 ---------
+# --------- Actions $3 ---------
+def _play_harbinger(player: dmb.Player,
+                    board: dmb.BoardState,
+                    agents: Dict[str, dma.Agent]):
+    player.draw_from_deck(1)
+    player.actions += 1
+    discarded = player.get_discarded_cards()
+    if len(discarded) == 0:
+        return
+    selected = agents[player.name].get_input_topdeck_card_from_discard(
+        player, board, allowed=discarded.union({dma.NO_SELECT})
+    )
+    if selected == dma.NO_SELECT:
+        return
+    player.topdeck_from_discard(selected)
+
+
 def _play_merchant(player: dmb.Player,
                    _board: dmb.BoardState,
                    _agents: Dict[str, dma.Agent]):
@@ -179,6 +195,7 @@ _PLAYABLE_CARD_LIST = {
     dmcl.CellarCard.shortname: _play_cellar,
     dmcl.ChapelCard.shortname: _play_chapel,
     dmcl.MoatCard.shortname: _play_moat,
+    dmcl.HarbingerCard.shortname: _play_harbinger,
     dmcl.MerchantCard.shortname: _play_merchant,
     dmcl.MilitiaCard.shortname: _play_militia,
 }

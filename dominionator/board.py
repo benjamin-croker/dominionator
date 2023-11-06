@@ -8,7 +8,7 @@ from typing import Callable, List, Set
 # Only import the cardlist itself, which has no dependencies
 import dominionator.cards.cardlist as dmcl
 
-START_CARDS = tuple(5 * [dmcl.CurseCard] + 5 * [dmcl.ChapelCard])
+START_CARDS = tuple(5 * [dmcl.CellarCard] + 5 * [dmcl.HarbingerCard])
 TURN_DRAW = 5
 
 
@@ -95,6 +95,9 @@ class Player(object):
     def get_trashable_cards(self) -> Set[str]:
         return set([card.shortname for card in self.hand])
 
+    def get_discarded_cards(self) -> Set[str]:
+        return set([card.shortname for card in self.discard])
+
     def play_from_hand(self, shortname: str):
         # Plays a card from the players hand. It assumes the card is selected via
         # another method. Returns a card for the GameState or card effect function
@@ -104,6 +107,10 @@ class Player(object):
         # make interfacing with an automated agent easier, by reducing the action
         # space to selecting one of the kingdom cards to play, instead of selecting
         # an index from a hand which could be an arbitrary size.
+
+        # This, and other similar functions assume that the Game has already
+        # checked it is possible to make this move before calling the function
+
         self._log(info, f"plays {shortname}")
         hand_i = [card.shortname for card in self.hand].index(shortname)
         played_card = self.hand.pop(hand_i)
@@ -138,6 +145,11 @@ class Player(object):
         self._log(info, f"moves {shortname} to deck")
         hand_i = [card.shortname for card in self.hand].index(shortname)
         self.deck = [self.hand.pop(hand_i)] + self.deck
+
+    def topdeck_from_discard(self, shortname: str):
+        self._log(info, f"topdecks {shortname} from discard to deck")
+        hand_i = [card.shortname for card in self.discard].index(shortname)
+        self.deck = [self.discard.pop(hand_i)] + self.deck
 
     def count_inplay(self, shortname: str):
         return len([
@@ -257,13 +269,14 @@ class BoardState(object):
         return (len(empty_supply) >= 3) or (dmcl.ProvinceCard.shortname in empty_supply)
 
     def __str__(self):
-        game_str = "\n<Supply>\n"
+        br = '--------------------'
+        game_str = f"\n{br}\n<Supply>\n"
         for k, v in self.supply.items():
             game_str += f"{k}:{len(v)}|"
-        game_str += '\n\n'
+        game_str += f'\n{br}\n'
         for player in self.players:
             pre = ''
             if player.index == self.active_player_i:
                 pre = '*'
-            game_str += f"{pre}{str(player)}\n"
+            game_str += f"{pre}{str(player)}{br}\n"
         return game_str

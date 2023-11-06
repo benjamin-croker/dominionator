@@ -44,6 +44,14 @@ class HumanAgent(dma_base.Agent):
         logging.info(board)
         return self._generic_input(f"{player.name} REVEAL_FROM_HAND", allowed)
 
+    def get_input_topdeck_card_from_discard(self,
+                                            player: dmb.Player,
+                                            board: dmb.BoardState,
+                                            allowed: Set[str]) -> str:
+        # Returns card shortname
+        logging.info(board)
+        return self._generic_input(f"{player.name} TOPDECK_FROM_DISCARD", allowed)
+
     def get_input_buy_card_from_supply(self,
                                        player: dmb.Player,
                                        board: dmb.BoardState,
