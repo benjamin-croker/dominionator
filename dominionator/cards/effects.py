@@ -10,6 +10,13 @@ CardFunction = Callable[
 
 
 # --------- Victory ---------
+def _count_curse(player: dmb.Player,
+                  _board: dmb.BoardState,
+                  _agents: Dict[str, dma.Agent]):
+    # Curse has constant VP
+    player.victory_points -= 1
+
+
 def _count_estate(player: dmb.Player,
                   _board: dmb.BoardState,
                   _agents: Dict[str, dma.Agent]):
@@ -32,6 +39,7 @@ def _count_province(player: dmb.Player,
 
 
 _COUNTABLE_CARD_LIST = {
+    dmcl.CurseCard.shortname: _count_curse,
     dmcl.EstateCard.shortname: _count_estate,
     dmcl.DuchyCard.shortname: _count_duchy,
     dmcl.ProvinceCard.shortname: _count_province

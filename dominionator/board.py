@@ -8,7 +8,7 @@ from typing import Callable, List, Set
 # Only import the cardlist itself, which has no dependencies
 import dominionator.cards.cardlist as dmcl
 
-START_CARDS = tuple(5 * [dmcl.MoatCard] + 5 * [dmcl.MilitiaCard])
+START_CARDS = tuple(5 * [dmcl.CurseCard] + 5 * [dmcl.MilitiaCard])
 TURN_DRAW = 5
 
 

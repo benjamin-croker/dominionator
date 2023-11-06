@@ -9,11 +9,11 @@ class Game(object):
     def __init__(self):
         logging.info("[Game]: Initialised")
         self.board = dmb.BoardState()
-        self.recount_vp()
         self.agents = {
             player.name: dma.HumanAgent()
             for player in self.board.players
         }
+        self.recount_vp()
 
     def _count_vp(self, shortname: str, player: dmb.Player):
         fn = dmce.get_count_card_fn(shortname)
@@ -25,7 +25,7 @@ class Game(object):
             [
                 self._count_vp(card.shortname, player)
                 for card in player.all_cards()
-                if card.is_victory
+                if card.is_victory or card.is_curse
             ]
 
     def play_action_treasure(self, shortname, player: dmb.Player):

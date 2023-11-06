@@ -15,7 +15,9 @@ class Card(object):
     is_attack_reaction = False
     is_treasure = False
     is_attack = False
+    # Note that curses technically aren't victory cards
     is_victory = False
+    is_curse = False
 
     def __str__(self):
         return self.shortname
@@ -25,6 +27,13 @@ class Card(object):
 
 
 # --------- Victory ---------
+class CurseCard(Card):
+    name = "Curse"
+    shortname = "V-"
+    cost = 0
+    is_victory = True
+
+
 class EstateCard(Card):
     name = "Estate"
     shortname = "V1"
