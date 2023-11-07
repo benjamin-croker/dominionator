@@ -98,11 +98,17 @@ class Player(object):
             if card.is_type(dmcl.CardType.TREASURE)
         ])
 
-    def get_discardable_cards(self) -> Set[str]:
-        return set([card.shortname for card in self.hand])
+    def get_discardable_cards(self, card_type: dmcl.CardType = dmcl.CardType.ANY) -> Set[str]:
+        return set([
+            card.shortname for card in self.hand
+            if card.is_type(card_type)
+        ])
 
-    def get_trashable_cards(self) -> Set[str]:
-        return set([card.shortname for card in self.hand])
+    def get_trashable_cards(self, card_type: dmcl.CardType = dmcl.CardType.ANY) -> Set[str]:
+        return set([
+            card.shortname for card in self.hand
+            if card.is_type(card_type)
+        ])
 
     def get_discarded_cards(self) -> Set[str]:
         return set([card.shortname for card in self.discard])
@@ -237,14 +243,22 @@ class BoardState(object):
         self.get_active_player().phase = Phase.WAITING
         self.active_player_i = (self.active_player_i + 1) % len(self.players)
 
-    def get_gainable_supply_cards_for_cost(self, cost_limit: int, exact=False) -> Set[str]:
+    def get_gainable_supply_cards_for_cost(self,
+                                           cost_limit: int,
+                                           exact: bool = False,
+                                           card_type: dmcl.CardType = dmcl.CardType.ANY
+                                           ) -> Set[str]:
         # This function is generic check for any type of gaining
         return set([
             supply_pile[0].shortname for _, supply_pile in self.supply.items()
-            if len(supply_pile) > 0 and (
-                    (supply_pile[0].cost == cost_limit) or
-                    (not exact and (supply_pile[0].cost < cost_limit))
-            )
+            if (
+                       len(supply_pile) > 0
+               ) and (
+                       (supply_pile[0].cost == cost_limit) or
+                       (not exact and (supply_pile[0].cost < cost_limit))
+               ) and (
+                   supply_pile[0].is_type(card_type)
+               )
         ])
 
     def get_buyable_supply_cards_for_active_player(self) -> Set[str]:

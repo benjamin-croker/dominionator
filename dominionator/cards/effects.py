@@ -232,6 +232,39 @@ def _play_workshop(player: dmb.Player,
     board.gain_card_from_supply_to_player(player, selected)
 
 
+def _play_mine(player: dmb.Player,
+               board: dmb.BoardState,
+               agents: Dict[str, dma.Agent]):
+    trashable = player.get_trashable_cards(card_type=dmcl.CardType.TREASURE)
+    if len(trashable) == 0:
+        return
+    selected = agents[player.name].get_input_trash_card_from_hand(
+        player, board, allowed=trashable.union({dma.NO_SELECT})
+    )
+    if selected == dma.NO_SELECT:
+        return
+    trashed_card = board.trash_card_from_player_hand(player, selected)
+    gainable = board.get_gainable_supply_cards_for_cost(
+        cost_limit=trashed_card.cost + 3, card_type=dmcl.CardType.TREASURE
+    )
+    if len(gainable) == 0:
+        return
+    selected = agents[player.name].get_input_gain_card_from_supply(
+        player, board, allowed=gainable
+    )
+    board.gain_card_from_supply_to_player(player, selected)
+
+
+# --------- Actions $5---------
+def _play_market(player: dmb.Player,
+                 _board: dmb.BoardState,
+                 _agents: Dict[str, dma.Agent]):
+    player.draw_from_deck(1)
+    player.actions += 1
+    player.coins += 1
+    player.buys += 1
+
+
 _PLAYABLE_CARD_LIST = {
     dmcl.CopperCard.shortname: _play_copper,
     dmcl.SilverCard.shortname: _play_silver,
@@ -245,7 +278,9 @@ _PLAYABLE_CARD_LIST = {
     dmcl.MilitiaCard.shortname: _play_militia,
     dmcl.RemodelCard.shortname: _play_remodel,
     dmcl.SmithyCard.shortname: _play_smithy,
-    dmcl.WorkshopCard.shortname: _play_workshop
+    dmcl.WorkshopCard.shortname: _play_workshop,
+    dmcl.MarketCard.shortname: _play_market,
+    dmcl.MineCard.shortname: _play_mine
 }
 
 

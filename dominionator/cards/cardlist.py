@@ -5,10 +5,16 @@ class CardType(Enum):
     ACTION = 1
     REACTION = 2
     ATTACK = 3
-    ATTACK_REACTION = 4  # Specify different events the card can react to
+    # Specify different events the card can react to. In the base set it's
+    # just Moat, which reacts to attack
+    ATTACK_REACTION = 4
     TREASURE = 5
     VICTORY = 6
     CURSE = 7
+    # Add a special value so functions which filter for a specific type of card
+    # (e.g. gain a treasure, trash an action from your hand) can be generalised
+    # to work with no filters (e.g. gain a card)
+    ANY = 8
 
 
 class Card(object):
@@ -26,7 +32,7 @@ class Card(object):
     types = {}
 
     def is_type(self, card_type: CardType):
-        return card_type in self.types
+        return (card_type in self.types) or (card_type == CardType.ANY)
 
     def __str__(self):
         return self.shortname
@@ -154,4 +160,18 @@ class WorkshopCard(Card):
     name = "Workshop"
     shortname = "WO"
     cost = 4
+    types = {CardType.ACTION}
+
+
+class MarketCard(Card):
+    name = "Market"
+    shortname = "MK"
+    cost = 5
+    types = {CardType.ACTION}
+
+
+class MineCard(Card):
+    name = "Mine"
+    shortname = "MN"
+    cost = 5
     types = {CardType.ACTION}
