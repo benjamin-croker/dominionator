@@ -214,6 +214,12 @@ def _play_remodel(player: dmb.Player,
     board.gain_card_from_supply_to_player(player, selected)
 
 
+def _play_smithy(player: dmb.Player,
+                 _board: dmb.BoardState,
+                 _agents: Dict[str, dma.Agent]):
+    player.draw_from_deck(3)
+
+
 def _play_workshop(player: dmb.Player,
                    board: dmb.BoardState,
                    agents: Dict[str, dma.Agent]):
@@ -238,6 +244,7 @@ _PLAYABLE_CARD_LIST = {
     dmcl.VillageCard.shortname: _play_village,
     dmcl.MilitiaCard.shortname: _play_militia,
     dmcl.RemodelCard.shortname: _play_remodel,
+    dmcl.SmithyCard.shortname: _play_smithy,
     dmcl.WorkshopCard.shortname: _play_workshop
 }
 

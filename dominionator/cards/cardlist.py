@@ -143,6 +143,13 @@ class RemodelCard(Card):
     types = {CardType.ACTION}
 
 
+class SmithyCard(Card):
+    name = "Smithy"
+    shortname = "SM"
+    cost = 4
+    types = {CardType.ACTION}
+
+
 class WorkshopCard(Card):
     name = "Workshop"
     shortname = "WO"
