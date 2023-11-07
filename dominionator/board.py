@@ -78,16 +78,25 @@ class Player(object):
     def get_playable_action_cards(self) -> Set[str]:
         if self.phase != Phase.ACTION or self.actions < 1:
             return set()
-        return set([card.shortname for card in self.hand if card.is_action])
+        return set([
+            card.shortname for card in self.hand
+            if card.is_type(dmcl.CardType.ACTION)
+        ])
 
     def get_attack_reaction_cards(self) -> Set[str]:
         # Just the moat in the base set
-        return set([card.shortname for card in self.hand if card.is_attack_reaction])
+        return set([
+            card.shortname for card in self.hand
+            if card.is_type(dmcl.CardType.ATTACK_REACTION)
+        ])
 
     def get_playable_treasure_cards(self) -> Set[str]:
         if self.phase != Phase.BUY:
             return set()
-        return set([card.shortname for card in self.hand if card.is_treasure])
+        return set([
+            card.shortname for card in self.hand
+            if card.is_type(dmcl.CardType.TREASURE)
+        ])
 
     def get_discardable_cards(self) -> Set[str]:
         return set([card.shortname for card in self.hand])

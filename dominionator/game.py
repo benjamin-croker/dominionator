@@ -3,6 +3,7 @@ import logging
 import dominionator.board as dmb
 import dominionator.agents as dma
 import dominionator.cards.effects as dmce
+import dominionator.cards.cardlist as dcml
 
 
 class Game(object):
@@ -25,7 +26,7 @@ class Game(object):
             [
                 self._count_vp(card.shortname, player)
                 for card in player.all_cards()
-                if card.is_victory or card.is_curse
+                if card.is_type(dcml.CardType.VICTORY) or card.is_type(dcml.CardType.CURSE)
             ]
 
     def play_action_treasure(self, player: dmb.Player, shortname: str):
