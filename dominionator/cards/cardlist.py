@@ -5,8 +5,7 @@ class CardType(Enum):
     ACTION = 1
     REACTION = 2
     ATTACK = 3
-    # Specify different events the card can react to
-    ATTACK_REACTION = 4
+    ATTACK_REACTION = 4  # Specify different events the card can react to
     TREASURE = 5
     VICTORY = 6
     CURSE = 7
@@ -135,6 +134,13 @@ class MilitiaCard(Card):
     shortname = "ML"
     cost = 4
     types = {CardType.ACTION, CardType.ATTACK}
+
+
+class RemodelCard(Card):
+    name = "Remodel"
+    shortname = "RM"
+    cost = 4
+    types = {CardType.ACTION}
 
 
 class WorkshopCard(Card):

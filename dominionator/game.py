@@ -50,7 +50,7 @@ class Game(object):
 
         while len(playable_cards) > 0:
             allowed = playable_cards.union({dma.NO_SELECT})
-            selected = agent.get_input_play_card_from_hand(
+            selected = agent.get_input_play_action_card_from_hand(
                 player=player, board=self.board, allowed=allowed
             )
             if selected == dma.NO_SELECT:
@@ -73,7 +73,7 @@ class Game(object):
                 selected = list(playable_cards)[0]
             else:
                 allowed = playable_cards.union({dma.NO_SELECT, dma.ALL_TREASURES})
-                selected = agent.get_input_play_card_from_hand(
+                selected = agent.get_input_play_treasure_card_from_hand(
                     player=player, board=self.board, allowed=allowed
                 )
 

@@ -195,10 +195,31 @@ def _play_militia(player: dmb.Player,
             attacked_player.discard_from_hand(selected)
 
 
+def _play_remodel(player: dmb.Player,
+                  board: dmb.BoardState,
+                  agents: Dict[str, dma.Agent]):
+    trashable = player.get_trashable_cards()
+    if len(trashable) == 0:
+        return
+    selected = agents[player.name].get_input_trash_card_from_hand(
+        player, board, allowed=trashable
+    )
+    trashed_card = board.trash_card_from_player_hand(player, selected)
+    gainable = board.get_gainable_supply_cards_for_cost(cost_limit=trashed_card.cost + 2)
+    if len(gainable) == 0:
+        return
+    selected = agents[player.name].get_input_gain_card_from_supply(
+        player, board, allowed=gainable
+    )
+    board.gain_card_from_supply_to_player(player, selected)
+
+
 def _play_workshop(player: dmb.Player,
                    board: dmb.BoardState,
                    agents: Dict[str, dma.Agent]):
     gainable = board.get_gainable_supply_cards_for_cost(cost_limit=4)
+    if len(gainable) == 0:
+        return
     selected = agents[player.name].get_input_gain_card_from_supply(
         player, board, allowed=gainable
     )
@@ -216,6 +237,7 @@ _PLAYABLE_CARD_LIST = {
     dmcl.MerchantCard.shortname: _play_merchant,
     dmcl.VillageCard.shortname: _play_village,
     dmcl.MilitiaCard.shortname: _play_militia,
+    dmcl.RemodelCard.shortname: _play_remodel,
     dmcl.WorkshopCard.shortname: _play_workshop
 }
 

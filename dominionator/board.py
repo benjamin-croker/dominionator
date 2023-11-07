@@ -8,7 +8,7 @@ from typing import Callable, List, Set
 # Only import the cardlist itself, which has no dependencies
 import dominionator.cards.cardlist as dmcl
 
-START_CARDS = tuple(5 * [dmcl.CellarCard] + 5 * [dmcl.HarbingerCard])
+START_CARDS = tuple(5 * [dmcl.RemodelCard] + 5 * [dmcl.RemodelCard])
 TURN_DRAW = 5
 
 
@@ -261,10 +261,14 @@ class BoardState(object):
         # The Game object must check card is gainable before calling
         player.gain_from_supply(card=self.supply[shortname].pop(0), gain_to=gain_to)
 
-    def trash_card_from_player_hand(self, player: Player, shortname: str):
+    def trash_card_from_player_hand(self, player: Player, shortname: str) -> dmcl.Card:
         # The player removes the card from their own hand and returns it
-        # for the Board to trash
-        self.trash += [player.trash_from_hand(shortname)]
+        # for the Board to trash.
+        trashed_card = player.trash_from_hand(shortname)
+        self.trash += [trashed_card]
+        # This returns the card in case the calling function needs to know what
+        # was trashed
+        return trashed_card
 
     def is_end_condition(self):
         # Find the empty supply piles

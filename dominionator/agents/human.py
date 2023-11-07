@@ -16,12 +16,19 @@ class HumanAgent(dma_base.Agent):
             selected = input(f"{instruction}:{allowed} > ")
         return selected
 
-    def get_input_play_card_from_hand(self,
-                                      player: dmb.Player,
-                                      board: dmb.BoardState,
-                                      allowed: Set[str]) -> str:
+    def get_input_play_action_card_from_hand(self,
+                                             player: dmb.Player,
+                                             board: dmb.BoardState,
+                                             allowed: Set[str]) -> str:
         logging.info(board)
-        return self._generic_input(f"{player.name} PLAY_FROM_HAND", allowed)
+        return self._generic_input(f"{player.name} PLAY_ACTION_FROM_HAND", allowed)
+
+    def get_input_play_treasure_card_from_hand(self,
+                                               player: dmb.Player,
+                                               board: dmb.BoardState,
+                                               allowed: Set[str]) -> str:
+        logging.info(board)
+        return self._generic_input(f"{player.name} PLAY_TREASURE_FROM_HAND", allowed)
 
     def get_input_discard_card_from_hand(self,
                                          player: dmb.Player,
