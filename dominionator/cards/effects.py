@@ -175,6 +175,13 @@ def _play_merchant(player: dmb.Player,
     # is handled in the routine for playing silver
 
 
+def _play_village(player: dmb.Player,
+                  _board: dmb.BoardState,
+                  _agents: Dict[str, dma.Agent]):
+    player.draw_from_deck(1)
+    player.actions += 2
+
+
 # --------- Actions $4---------
 def _play_militia(player: dmb.Player,
                   board: dmb.BoardState,
@@ -188,6 +195,16 @@ def _play_militia(player: dmb.Player,
             attacked_player.discard_from_hand(selected)
 
 
+def _play_workshop(player: dmb.Player,
+                   board: dmb.BoardState,
+                   agents: Dict[str, dma.Agent]):
+    gainable = board.get_gainable_supply_cards_for_cost(cost_limit=4)
+    selected = agents[player.name].get_input_gain_card_from_supply(
+        player, board, allowed=gainable
+    )
+    board.gain_card_from_supply_to_player(player, selected)
+
+
 _PLAYABLE_CARD_LIST = {
     dmcl.CopperCard.shortname: _play_copper,
     dmcl.SilverCard.shortname: _play_silver,
@@ -197,7 +214,9 @@ _PLAYABLE_CARD_LIST = {
     dmcl.MoatCard.shortname: _play_moat,
     dmcl.HarbingerCard.shortname: _play_harbinger,
     dmcl.MerchantCard.shortname: _play_merchant,
+    dmcl.VillageCard.shortname: _play_village,
     dmcl.MilitiaCard.shortname: _play_militia,
+    dmcl.WorkshopCard.shortname: _play_workshop
 }
 
 

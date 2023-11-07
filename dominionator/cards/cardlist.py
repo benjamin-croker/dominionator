@@ -123,8 +123,22 @@ class MerchantCard(Card):
     types = {CardType.ACTION}
 
 
+class VillageCard(Card):
+    name = "Village"
+    shortname = "VL"
+    cost = 3
+    types = {CardType.ACTION}
+
+
 class MilitiaCard(Card):
     name = "Militia"
     shortname = "ML"
     cost = 4
     types = {CardType.ACTION, CardType.ATTACK}
+
+
+class WorkshopCard(Card):
+    name = "Workshop"
+    shortname = "WO"
+    cost = 4
+    types = {CardType.ACTION}

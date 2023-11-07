@@ -137,17 +137,17 @@ class Player(object):
         hand_i = [card.shortname for card in self.hand].index(shortname)
         return self.hand.pop(hand_i)
 
-    def gain_from_supply(self, card: dmcl.Card, location: Location):
+    def gain_from_supply(self, card: dmcl.Card, gain_to: Location = Location.DISCARD):
         # This method must be called by the Board which takes the card off the supply
-        self._log(info, f"gains {card.shortname} to {location}")
-        if location == Location.DISCARD:
+        self._log(info, f"gains {card.shortname} to {gain_to}")
+        if gain_to == Location.DISCARD:
             self.discard += [card]
-        elif location == Location.DECK:
+        elif gain_to == Location.DECK:
             # goes on the top of deck
             self.deck = [card] + self.deck
-        elif location == Location.HAND:
+        elif gain_to == Location.HAND:
             self.hand += [card]
-        elif location == Location.INPLAY:
+        elif gain_to == Location.INPLAY:
             self.inplay += [card]
 
     def move_from_hand_to_top_of_deck(self, shortname: str):
@@ -259,10 +259,7 @@ class BoardState(object):
                                         gain_to=Location.DISCARD):
         logging.info(f"[BOARD]: {player.name} gains {shortname}")
         # The Game object must check card is gainable before calling
-        card = self.supply[shortname].pop(0)
-        # TODO: pass this to the player to handle
-        player.gain_from_supply()
-        player.discard += [card]
+        player.gain_from_supply(card=self.supply[shortname].pop(0), gain_to=gain_to)
 
     def trash_card_from_player_hand(self, player: Player, shortname: str):
         # The player removes the card from their own hand and returns it
