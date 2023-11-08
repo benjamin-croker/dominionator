@@ -15,12 +15,16 @@ def main():
     with open(sys.argv[1]) as fp:
         game_config = json.load(fp)
 
+    # Config for logging output to the terminal
     logging.basicConfig(
-        format='%(levelname)s:%(message)s', level=game_config['log_level']
+        format='%(levelname)s:%(message)s', level=game_config['terminal_log_level']
     )
-    stat_log = dlog.StatLog(
-        filename=os.path.join('logs', dt.datetime.now().isoformat())
-    )
+
+    # Config for logging game statistics to csv
+    filename = game_config.get('statistics_log_filname')
+    if filename is None:
+        filename = f'{dt.datetime.now().isoformat()}.csv'
+    stat_log = dlog.StatLog(filename=os.path.join('logs', filename))
 
     for i in range(game_config['n_games']):
         game = dominion.Game(

@@ -1,5 +1,6 @@
 import logging
-from typing import Dict, List
+from logging import debug, info
+from typing import Dict, List, Callable
 
 import dominionator.board as dmb
 import dominionator.player as dmp
@@ -30,7 +31,7 @@ class Game(object):
             Integer used for identifying games if multiple games are run in a simulation
         """
 
-        logging.info("[Game]: Initialised")
+        self._log(info, "initialised")
         self.board = dmb.BoardState(list(players.keys()), kingdom, start_cards)
         self.agents = {
             player_name: dma.lookup[player_conf['agent']]()
@@ -39,6 +40,15 @@ class Game(object):
         self.stat_log = stat_log
         self.game_index = game_index
         self.recount_vp()
+
+    @staticmethod
+    def _log(logfn: Callable[[str], None], message: str):
+        logfn(f"[GAME]: {message}")
+
+    def _stat_log(self, player: dmp.Player, measure: str, value):
+        self.stat_log.add_item(
+            self.game_index, self.board.turn_num, player.name, measure, value
+        )
 
     def _count_vp(self, shortname: str, player: dmp.Player):
         fn = dmce.get_count_card_fn(shortname)
@@ -53,23 +63,19 @@ class Game(object):
                 if card.is_type(dcml.CardType.VICTORY) or card.is_type(dcml.CardType.CURSE)
             ]
 
-    def play_action_treasure(self, player: dmp.Player, shortname: str):
+    def get_active_player_agent(self):
+        return self.agents[self.board.get_active_player().name]
+
+    def _play_action_treasure(self, player: dmp.Player, shortname: str):
         player.play_from_hand(shortname)
         fn = dmce.get_play_card_fn(shortname)
         fn(player, self.board, self.agents)
 
-    def buy_card(self, player: dmp.Player, shortname: str):
-        logging.info(f"[GAME]: {player.name} buys {shortname}")
-        player.coins -= self.board.supply[shortname][0].cost
-        self.board.gain_card_from_supply_to_player(player, shortname)
-
-    def get_active_player_agent(self):
-        return self.agents[self.board.get_active_player().name]
-
     def _player_play_action_loop(self,
                                  player: dmp.Player,
                                  agent: dma.Agent):
-        logging.debug(f"[GAME]: {player.name} action loop")
+        self._log(debug, f"{player.name} action loop")
+        used_actions = 0
         playable_cards = player.get_playable_action_cards()
 
         while len(playable_cards) > 0:
@@ -80,9 +86,18 @@ class Game(object):
             if selected == dma.NO_SELECT:
                 break
             player.actions -= 1
+            player.play_from_hand(selected)
+            self._log(debug, f"playing {selected} for {player.name}")
+            dmce.get_play_card_fn(selected)(player, self.board, self.agents)
 
-            self.play_action_treasure(player, selected)
+            used_actions += 1
+
             playable_cards = player.get_playable_action_cards()
+
+        total_actions = used_actions + player.actions
+        self._stat_log(player, 'used_actions', used_actions)
+        self._stat_log(player, 'unused_actions', player.actions)
+        self._stat_log(player, 'total_actions', total_actions)
 
     def _player_play_treasure_loop(self,
                                    player: dmp.Player,
@@ -107,12 +122,23 @@ class Game(object):
                 autoplay_treasures = True
                 continue
             else:
-                self.play_action_treasure(player, selected)
+                player.play_from_hand(selected)
+                self._log(debug, f"playing {selected} for {player.name}")
+                dmce.get_play_card_fn(selected)(player, self.board, self.agents)
+
                 playable_cards = player.get_playable_treasure_cards()
+
+        self._stat_log(player, 'played_coins', player.coins)
 
     def _player_buy_loop(self, player, agent):
         buyable_cards = self.board.get_buyable_supply_cards_for_active_player()
         logging.debug(f"[GAME]: {player.name} buy loop. Buyable: {buyable_cards}")
+
+        # These are at their highest at the start of the buy phase
+        self.recount_vp()
+        total_coins = player.coins
+        total_buys = player.buys
+        vp_start_buy = player.victory_points
 
         while len(buyable_cards) > 0:
             allowed = buyable_cards.union({dma.NO_SELECT})
@@ -121,9 +147,29 @@ class Game(object):
             )
             if selected == dma.NO_SELECT:
                 break
+
+            logging.info(f"[GAME]: {player.name} buys {selected}")
             player.buys -= 1
-            self.buy_card(player, selected)
+            player.coins -= self.board.supply[selected][0].cost
+            self.board.gain_card_from_supply_to_player(player, selected)
+
             buyable_cards = self.board.get_buyable_supply_cards_for_active_player()
+
+        self.recount_vp()
+        unused_coins = player.coins
+        used_coins = total_coins - unused_coins
+        unused_buys = player.buys
+        used_buys = total_buys - unused_buys
+        vp_gained = player.victory_points - vp_start_buy
+
+        self._stat_log(player, 'spent_coins', used_coins)
+        self._stat_log(player, 'unspent_coins', unused_coins)
+        self._stat_log(player, 'total_coins', total_coins)
+        self._stat_log(player, 'used_buys', used_buys)
+        self._stat_log(player, 'unused_buys', unused_buys)
+        self._stat_log(player, 'total_buys', total_buys)
+        self._stat_log(player, 'gained_vp', vp_gained)
+        self._stat_log(player, 'total_vp', player.victory_points)
 
     def active_player_turn_loop(self):
         player = self.board.get_active_player()
@@ -142,18 +188,45 @@ class Game(object):
 
         # Cleanup phase
         player.start_cleanup_phase()
-        self.recount_vp()
+        # No need to recount VP as this happens at the end of the buy phase
 
     def check_winner(self):
         self.recount_vp()
+        p1_str = f"{self.board.players[0].name}:{self.board.players[0].victory_points}"
+        p2_str = f"{self.board.players[1].name}:{self.board.players[1].victory_points}"
+        self._log(info, f"Game ended. Final points {p1_str} {p2_str}")
+
         if self.board.players[0].victory_points > self.board.players[1].victory_points:
+            self._log(info, f"{self.board.players[0].name} wins")
+            self._stat_log(self.board.players[0], 'won', 1)
+            self._stat_log(self.board.players[1], 'won', 0)
+            self._stat_log(self.board.players[0], 'tied', 0)
+            self._stat_log(self.board.players[1], 'tied', 0)
             return self.board.players[0]
+
         elif self.board.players[0].victory_points < self.board.players[1].victory_points:
+            self._log(info, f"{self.board.players[1].name} wins")
+            self._stat_log(self.board.players[0], 'won', 0)
+            self._stat_log(self.board.players[1], 'won', 1)
+            self._stat_log(self.board.players[0], 'tied', 0)
+            self._stat_log(self.board.players[1], 'tied', 0)
             return self.board.players[1]
+
         elif self.board.active_player_i == 0:
             # Players have equal points but second player hasn't had their turn
+            self._log(info, f"{self.board.players[1].name} wins")
+            self._stat_log(self.board.players[0], 'won', 0)
+            self._stat_log(self.board.players[1], 'won', 1)
+            self._stat_log(self.board.players[0], 'tied', 0)
+            self._stat_log(self.board.players[1], 'tied', 0)
             return self.board.players[1]
-        else:
+
+        else:  # tie
+            self._log(info, "tie")
+            self._stat_log(self.board.players[0], 'won', 0)
+            self._stat_log(self.board.players[1], 'won', 0)
+            self._stat_log(self.board.players[0], 'tied', 1)
+            self._stat_log(self.board.players[1], 'tied', 1)
             return None
 
     def start_main_loop(self):
@@ -165,15 +238,8 @@ class Game(object):
             if not game_ended:
                 self.board.advance_turn_to_next_player()
 
-        p1_str = f"{self.board.players[0].name}:{self.board.players[0].victory_points}"
-        p2_str = f"{self.board.players[1].name}:{self.board.players[1].victory_points}"
-        logging.info(f"[GAME]: Ended. {p1_str} {p2_str}")
-        winner = self.check_winner()
-        if winner is None:
-            logging.info("[GAME]: Tie")
-        else:
-            logging.info(f"[GAME]: {winner.name} wins")
-        logging.info(self.board)
+        self._log(info, str(self.board))
+        self.check_winner()
 
     def __str__(self):
         return str(self.board)

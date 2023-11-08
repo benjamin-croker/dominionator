@@ -1,3 +1,4 @@
+import logging
 from typing import Set
 
 import dominionator.board as dmb
@@ -82,6 +83,7 @@ class BigMoneyAgent(dma_base.Agent):
                                        player: dmp.Player,
                                        board: dmb.BoardState,
                                        allowed: Set[str]) -> str:
+        logging.debug(board)
         pref_order = [
             dmcl.ProvinceCard.shortname,
             dmcl.GoldCard.shortname,
@@ -89,8 +91,13 @@ class BigMoneyAgent(dma_base.Agent):
             dma_base.NO_SELECT
         ]
         n_provinces = board.get_supply_pile_size(dmcl.ProvinceCard.shortname)
+        # If there's only once province, always buy the best VP you can
+        # This prevents buying gold right near the end when the duchys have
+        # run out
+        if n_provinces <= 1:
+            pref_order[1:1] = [dmcl.DuchyCard.shortname, dmcl.EstateCard.shortname]
         # Go for Duchy over Gold if <= 4 Provinces
-        if n_provinces <= 4 and player.coins in {6, 7}:
+        elif n_provinces <= 4 and player.coins in {6, 7}:
             pref_order[1:1] = [dmcl.DuchyCard.shortname]
         # Go for Duchy over Silver if <= 5 Provinces
         elif n_provinces <= 5 and player.coins == 5:

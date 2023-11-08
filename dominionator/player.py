@@ -1,5 +1,6 @@
 from enum import Enum
 import random
+import logging
 from logging import debug, info
 from typing import List, Callable, Set
 
@@ -49,6 +50,7 @@ class Player(object):
         # This will start the game by shuffling all cards and drawing 5
         self.discard = start_cards
         self.start_cleanup_phase()
+        logging.debug(f"[{self.name}]: initialised")
 
     def _log(self, logfn: Callable[[str], None], message: str):
         logfn(f"[{self.name}]: {message}")

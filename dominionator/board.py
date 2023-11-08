@@ -47,7 +47,7 @@ class BoardState(object):
         self.supply = supply_basic | supply_kingdom
         self.trash = []
 
-        logging.info("[Board]: Initialised")
+        logging.debug("[BOARD]: initialised")
 
     def get_active_player(self):
         return self.players[self.active_player_i]
@@ -95,7 +95,6 @@ class BoardState(object):
                                         player: dmp.Player,
                                         shortname: str,
                                         gain_to=dmp.Location.DISCARD):
-        logging.info(f"[BOARD]: {player.name} gains {shortname}")
         # The Game object must check card is gainable before calling
         player.gain_from_supply(card=self.supply[shortname].pop(0), gain_to=gain_to)
 

@@ -2,10 +2,10 @@
   "game": {
     "players": {
       "Player1": {
-        "agent": "Human"
+        "agent": "BigMoney"
       },
       "Player2": {
-        "agent": "Human"
+        "agent": "BigMoney"
       }
     },
     "kingdom": [
@@ -33,6 +33,7 @@
       "Estate"
     ]
   },
-  "n_games": 10,
-  "log_level": 0
+  "n_games": 1,
+  "statistics_log_filname": "first_game.csv",
+  "terminal_log_level": 0
 }
