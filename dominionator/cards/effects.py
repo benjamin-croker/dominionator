@@ -1,37 +1,38 @@
 import dominionator.board as dmb
+import dominionator.player as dmp
 import dominionator.agents as dma
 import dominionator.cards.cardlist as dmcl
 from typing import Callable, List, Dict
 
 # Type for functions in dictionaries above
 CardFunction = Callable[
-    [dmb.Player, dmb.BoardState, Dict[str, dma.Agent]], None
+    [dmp.Player, dmb.BoardState, Dict[str, dma.Agent]], None
 ]
 
 
 # --------- Victory ---------
-def _count_curse(player: dmb.Player,
+def _count_curse(player: dmp.Player,
                  _board: dmb.BoardState,
                  _agents: Dict[str, dma.Agent]):
     # Curse has constant VP
     player.victory_points -= 1
 
 
-def _count_estate(player: dmb.Player,
+def _count_estate(player: dmp.Player,
                   _board: dmb.BoardState,
                   _agents: Dict[str, dma.Agent]):
     # Estate has constant VP
     player.victory_points += 1
 
 
-def _count_duchy(player: dmb.Player,
+def _count_duchy(player: dmp.Player,
                  _board: dmb.BoardState,
                  _agents: Dict[str, dma.Agent]):
     # Estate has constant VP
     player.victory_points += 3
 
 
-def _count_province(player: dmb.Player,
+def _count_province(player: dmp.Player,
                     _board: dmb.BoardState,
                     _agents: Dict[str, dma.Agent]):
     # Estate has constant VP
@@ -51,14 +52,14 @@ def get_count_card_fn(shortname: str) -> CardFunction:
 
 
 # --------- Treasures ---------
-def _play_copper(player: dmb.Player,
+def _play_copper(player: dmp.Player,
                  _board: dmb.BoardState,
                  _agents: Dict[str, dma.Agent]):
     # Board state is unaffected besides the player
     player.coins += 1
 
 
-def _play_silver(player: dmb.Player,
+def _play_silver(player: dmp.Player,
                  _board: dmb.BoardState,
                  _agents: Dict[str, dma.Agent]):
     # The first silver played generates another $1 for every merchant played
@@ -70,7 +71,7 @@ def _play_silver(player: dmb.Player,
     )
 
 
-def _play_gold(player: dmb.Player,
+def _play_gold(player: dmp.Player,
                _board: dmb.BoardState,
                _agents: Dict[str, dma.Agent]):
     # Board state is unaffected besides the player
@@ -79,9 +80,9 @@ def _play_gold(player: dmb.Player,
 
 # --------- Actions ---------
 
-def _check_attack_reaction(player: dmb.Player,
+def _check_attack_reaction(player: dmp.Player,
                            board: dmb.BoardState,
-                           agents: Dict[str, dma.Agent]) -> List[dmb.Player]:
+                           agents: Dict[str, dma.Agent]) -> List[dmp.Player]:
     # Allows other players to react to an attack, and returns a list of players
     # which are affected.
     other_players = board.get_other_players(player)
@@ -103,7 +104,7 @@ def _check_attack_reaction(player: dmb.Player,
 
 # --------- Actions $2 ---------
 
-def _play_cellar(player: dmb.Player,
+def _play_cellar(player: dmp.Player,
                  board: dmb.BoardState,
                  agents: Dict[str, dma.Agent]):
     player.actions += 1
@@ -124,7 +125,7 @@ def _play_cellar(player: dmb.Player,
     player.draw_from_deck(n_discarded)
 
 
-def _play_chapel(player: dmb.Player,
+def _play_chapel(player: dmp.Player,
                  board: dmb.BoardState,
                  agents: Dict[str, dma.Agent]):
     n_trashed = 0
@@ -142,7 +143,7 @@ def _play_chapel(player: dmb.Player,
         trashable = player.get_trashable_cards()
 
 
-def _play_moat(player: dmb.Player,
+def _play_moat(player: dmp.Player,
                _board: dmb.BoardState,
                _agents: Dict[str, dma.Agent]):
     # This is the action part of the card, not the reaction to attacks
@@ -150,7 +151,7 @@ def _play_moat(player: dmb.Player,
 
 
 # --------- Actions $3 ---------
-def _play_harbinger(player: dmb.Player,
+def _play_harbinger(player: dmp.Player,
                     board: dmb.BoardState,
                     agents: Dict[str, dma.Agent]):
     player.draw_from_deck(1)
@@ -166,7 +167,7 @@ def _play_harbinger(player: dmb.Player,
     player.topdeck_from_discard(selected)
 
 
-def _play_merchant(player: dmb.Player,
+def _play_merchant(player: dmp.Player,
                    _board: dmb.BoardState,
                    _agents: Dict[str, dma.Agent]):
     player.draw_from_deck(1)
@@ -175,7 +176,7 @@ def _play_merchant(player: dmb.Player,
     # is handled in the routine for playing silver
 
 
-def _play_village(player: dmb.Player,
+def _play_village(player: dmp.Player,
                   _board: dmb.BoardState,
                   _agents: Dict[str, dma.Agent]):
     player.draw_from_deck(1)
@@ -183,19 +184,19 @@ def _play_village(player: dmb.Player,
 
 
 # --------- Actions $4---------
-def _play_militia(player: dmb.Player,
+def _play_militia(player: dmp.Player,
                   board: dmb.BoardState,
                   agents: Dict[str, dma.Agent]):
     player.coins += 2
     for attacked_player in _check_attack_reaction(player, board, agents):
-        while len(attacked_player.hand) > 3:
+        while attacked_player.count_cards_in_hand() > 3:
             selected = agents[attacked_player.name].get_input_discard_card_from_hand(
                 attacked_player, board, attacked_player.get_discardable_cards()
             )
             attacked_player.discard_from_hand(selected)
 
 
-def _play_remodel(player: dmb.Player,
+def _play_remodel(player: dmp.Player,
                   board: dmb.BoardState,
                   agents: Dict[str, dma.Agent]):
     trashable = player.get_trashable_cards()
@@ -214,13 +215,13 @@ def _play_remodel(player: dmb.Player,
     board.gain_card_from_supply_to_player(player, selected)
 
 
-def _play_smithy(player: dmb.Player,
+def _play_smithy(player: dmp.Player,
                  _board: dmb.BoardState,
                  _agents: Dict[str, dma.Agent]):
     player.draw_from_deck(3)
 
 
-def _play_workshop(player: dmb.Player,
+def _play_workshop(player: dmp.Player,
                    board: dmb.BoardState,
                    agents: Dict[str, dma.Agent]):
     gainable = board.get_gainable_supply_cards_for_cost(cost_limit=4)
@@ -232,7 +233,7 @@ def _play_workshop(player: dmb.Player,
     board.gain_card_from_supply_to_player(player, selected)
 
 
-def _play_mine(player: dmb.Player,
+def _play_mine(player: dmp.Player,
                board: dmb.BoardState,
                agents: Dict[str, dma.Agent]):
     trashable = player.get_trashable_cards(card_type=dmcl.CardType.TREASURE)
@@ -256,7 +257,7 @@ def _play_mine(player: dmb.Player,
 
 
 # --------- Actions $5---------
-def _play_market(player: dmb.Player,
+def _play_market(player: dmp.Player,
                  _board: dmb.BoardState,
                  _agents: Dict[str, dma.Agent]):
     player.draw_from_deck(1)

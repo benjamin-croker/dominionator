@@ -1,22 +1,37 @@
 import logging
+from typing import Dict, List
 
 import dominionator.board as dmb
+import dominionator.player as dmp
 import dominionator.agents as dma
 import dominionator.cards.effects as dmce
 import dominionator.cards.cardlist as dcml
 
 
 class Game(object):
-    def __init__(self):
+    def __init__(self,
+                 players: Dict[str, Dict[str, str]],
+                 kingdom: List[str],
+                 start_cards: List[str]):
+        """
+        :param players:
+            Dictionary of playerName: config mappings. Must contain an "agent" key.
+            e.g. { "Player1": {"agent": "Human"}, "Player2": {"agent": "Human"}}
+        :param kingdom:
+            List of short/long card names to include in the supply along with the base cards
+        :param start_cards:
+            List of short/long card names to use in the starting hand for each player
+        """
+
         logging.info("[Game]: Initialised")
-        self.board = dmb.BoardState()
+        self.board = dmb.BoardState(list(players.keys()), kingdom, start_cards)
         self.agents = {
-            player.name: dma.HumanAgent()
-            for player in self.board.players
+            player_name: dma.lookup[player_conf['agent']]()
+            for player_name, player_conf in players.items()
         }
         self.recount_vp()
 
-    def _count_vp(self, shortname: str, player: dmb.Player):
+    def _count_vp(self, shortname: str, player: dmp.Player):
         fn = dmce.get_count_card_fn(shortname)
         fn(player, self.board, self.agents)
 
@@ -29,12 +44,12 @@ class Game(object):
                 if card.is_type(dcml.CardType.VICTORY) or card.is_type(dcml.CardType.CURSE)
             ]
 
-    def play_action_treasure(self, player: dmb.Player, shortname: str):
+    def play_action_treasure(self, player: dmp.Player, shortname: str):
         player.play_from_hand(shortname)
         fn = dmce.get_play_card_fn(shortname)
         fn(player, self.board, self.agents)
 
-    def buy_card(self, player: dmb.Player, shortname: str):
+    def buy_card(self, player: dmp.Player, shortname: str):
         logging.info(f"[GAME]: {player.name} buys {shortname}")
         player.coins -= self.board.supply[shortname][0].cost
         self.board.gain_card_from_supply_to_player(player, shortname)
@@ -43,7 +58,7 @@ class Game(object):
         return self.agents[self.board.get_active_player().name]
 
     def _player_play_action_loop(self,
-                                 player: dmb.Player,
+                                 player: dmp.Player,
                                  agent: dma.Agent):
         logging.debug(f"[GAME]: {player.name} action loop")
         playable_cards = player.get_playable_action_cards()
@@ -61,7 +76,7 @@ class Game(object):
             playable_cards = player.get_playable_action_cards()
 
     def _player_play_treasure_loop(self,
-                                   player: dmb.Player,
+                                   player: dmp.Player,
                                    agent: dma.Agent):
         logging.debug(f"[GAME]: {player.name} play treasure loop")
         playable_cards = player.get_playable_treasure_cards()
@@ -118,13 +133,13 @@ class Game(object):
 
         # Cleanup phase
         player.start_cleanup_phase()
+        self.recount_vp()
 
     def start_main_loop(self):
         game_ended = False
 
         while not game_ended:
             self.active_player_turn_loop()
-            self.recount_vp()
             game_ended = self.board.is_end_condition()
             if not game_ended:
                 self.board.advance_turn_to_next_player()

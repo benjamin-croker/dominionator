@@ -1,0 +1,38 @@
+{
+  "game": {
+    "players": {
+      "Player1": {
+        "agent": "Human"
+      },
+      "Player2": {
+        "agent": "Human"
+      }
+    },
+    "kingdom": [
+      "Cellar",
+      "Market",
+      "Merchant",
+      "Militia",
+      "Mine",
+      "Moat",
+      "Remodel",
+      "Smithy",
+      "Village",
+      "Workshop"
+    ],
+    "start_cards": [
+      "Copper",
+      "Copper",
+      "Copper",
+      "Copper",
+      "Copper",
+      "Copper",
+      "Copper",
+      "Estate",
+      "Estate",
+      "Estate"
+    ]
+  },
+  "n_games": 10,
+  "log_level": 0
+}

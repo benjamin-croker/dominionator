@@ -1,10 +1,19 @@
 import logging
+import json
+import sys
 import dominionator.game as dominion
 
 
 def main():
-    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
-    game = dominion.Game()
+    if len(sys.argv) != 2:
+        print("Usage: python run.py config")
+        sys.exit(1)
+
+    with open(sys.argv[1]) as fp:
+        game_config = json.load(fp)
+
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=game_config['log_level'])
+    game = dominion.Game(**game_config['game'])
     game.start_main_loop()
     logging.info(game)
 
