@@ -82,6 +82,9 @@ class BoardState(object):
                )
         ])
 
+    def get_supply_pile_size(self, shortname: str):
+        return len(self.supply[shortname])
+
     def get_buyable_supply_cards_for_active_player(self) -> Set[str]:
         player = self.get_active_player()
         if player.phase != dmp.Phase.BUY or player.buys <= 0:
@@ -115,7 +118,7 @@ class BoardState(object):
 
     def __str__(self):
         br = '--------------------'
-        game_str = f"\n{br}\n<Supply>\n|"
+        game_str = f"\n{br}\n<Supply> Turn {self.turn_num}\n|"
         for k, v in list(self.supply.items())[0:-10]:
             game_str += f"{k}:{len(v)}|"
         game_str += '\n|'

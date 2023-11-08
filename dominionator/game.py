@@ -6,13 +6,16 @@ import dominionator.player as dmp
 import dominionator.agents as dma
 import dominionator.cards.effects as dmce
 import dominionator.cards.cardlist as dcml
+import dominionator.statlog as dlog
 
 
 class Game(object):
     def __init__(self,
                  players: Dict[str, Dict[str, str]],
                  kingdom: List[str],
-                 start_cards: List[str]):
+                 start_cards: List[str],
+                 stat_log: dlog.StatLog,
+                 game_index: int = 0):
         """
         :param players:
             Dictionary of playerName: config mappings. Must contain an "agent" key.
@@ -21,6 +24,10 @@ class Game(object):
             List of short/long card names to include in the supply along with the base cards
         :param start_cards:
             List of short/long card names to use in the starting hand for each player
+        :param stat_log:
+            Object to log game statistics to
+        :param game_index:
+            Integer used for identifying games if multiple games are run in a simulation
         """
 
         logging.info("[Game]: Initialised")
@@ -29,6 +36,8 @@ class Game(object):
             player_name: dma.lookup[player_conf['agent']]()
             for player_name, player_conf in players.items()
         }
+        self.stat_log = stat_log
+        self.game_index = game_index
         self.recount_vp()
 
     def _count_vp(self, shortname: str, player: dmp.Player):
@@ -135,6 +144,18 @@ class Game(object):
         player.start_cleanup_phase()
         self.recount_vp()
 
+    def check_winner(self):
+        self.recount_vp()
+        if self.board.players[0].victory_points > self.board.players[1].victory_points:
+            return self.board.players[0]
+        elif self.board.players[0].victory_points < self.board.players[1].victory_points:
+            return self.board.players[1]
+        elif self.board.active_player_i == 0:
+            # Players have equal points but second player hasn't had their turn
+            return self.board.players[1]
+        else:
+            return None
+
     def start_main_loop(self):
         game_ended = False
 
@@ -144,8 +165,15 @@ class Game(object):
             if not game_ended:
                 self.board.advance_turn_to_next_player()
 
-        logging.info("[GAME]: Ended")
-        return str(self.board)
+        p1_str = f"{self.board.players[0].name}:{self.board.players[0].victory_points}"
+        p2_str = f"{self.board.players[1].name}:{self.board.players[1].victory_points}"
+        logging.info(f"[GAME]: Ended. {p1_str} {p2_str}")
+        winner = self.check_winner()
+        if winner is None:
+            logging.info("[GAME]: Tie")
+        else:
+            logging.info(f"[GAME]: {winner.name} wins")
+        logging.info(self.board)
 
     def __str__(self):
         return str(self.board)
