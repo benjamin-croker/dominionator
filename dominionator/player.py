@@ -202,6 +202,9 @@ class Player(object):
     def all_cards(self) -> List[dmcl.Card]:
         return self.hand + self.deck + self.discard + self.inplay
 
+    def all_cards_names(self) -> List[str]:
+        return [card.shortname for card in self.all_cards()]
+
     def __str__(self) -> str:
         player_str = (
             f"<{self.name}> @{self.actions} ${self.coins} &{self.buys} ^{self.victory_points}\n"
