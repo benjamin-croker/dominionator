@@ -64,3 +64,9 @@ class Agent(object):
                                         allowed: Set[str]) -> str:
         # Returns card shortname
         raise NotImplementedError
+
+    # Agents have the capability to reward themselves at the end of each turn,
+    # typically by looking at the Player's turn statistics
+    # For most agents this is not used, but is a capability for ML and RL agents.
+    def reward_outcomes(self, player: dmp.Player, board: dmb.BoardState):
+        pass

@@ -24,6 +24,40 @@ class Location(Enum):
 TURN_DRAW = 5
 
 
+def _create_turnstats_dict():
+    return {
+        # Action phase
+        'used_actions': 0,
+        'unused_actions': 0,
+        'total_actions': 0,
+
+        # Attack interactions
+        'delivered_attacks': 0,
+
+        # Buy phase - coins and their source
+        'action_coins': 0,
+        'treasure_coins': 0,
+        # Buy phase - purchase cards
+        'spent_coins': 0,
+        'unspent_coins': 0,
+        'total_coins': 0,
+        'used_buys': 0,
+        'unused_buys': 0,
+        'total_buys': 0,
+
+        # VP changes and running total
+        'gained_vp': 0,
+        'total_vp': 0,
+
+        # Overall game outcome. Values with None will be ignored until set, which
+        # is the desired behaviour for these statistics
+        'won_game': None,
+        'lost_game': None,
+        'tied_game': None,
+        'win_margin': None
+    }
+
+
 class Player(object):
     # Class for managing
     # This class is not an "agent" which makes decisions or affects other parts of the game.
@@ -44,8 +78,12 @@ class Player(object):
         self.buys = 0
         self.phase = Phase.WAITING
 
-        # Set by the game engine running a count
+        # Set by the game engine by running a count
         self.victory_points = 0
+
+        # Ongoing log used to track player statistics reset every turn, and
+        # controlled by the game engine
+        self.turnstats = _create_turnstats_dict()
 
         # This will start the game by shuffling all cards and drawing 5
         self.discard = start_cards
@@ -198,6 +236,9 @@ class Player(object):
 
         # Draw 5 cards
         self.draw_from_deck(TURN_DRAW)
+
+    def reset_turnstats(self):
+        self.turnstats = _create_turnstats_dict()
 
     def all_cards(self) -> List[dmcl.Card]:
         return self.hand + self.deck + self.discard + self.inplay

@@ -96,10 +96,12 @@ def _check_attack_reaction(player: dmp.Player,
     ]
 
     # Return players who can be attacked - i.e. did not reveal a moat
-    return [
+    attacked_players = [
         p for p, revealed in zip(other_players, other_player_revealed)
         if revealed not in [dmcl.MoatCard.shortname]
     ]
+    player.turnstats['delivered_attacks'] = len(attacked_players)
+    return attacked_players
 
 
 # --------- Actions $2 ---------

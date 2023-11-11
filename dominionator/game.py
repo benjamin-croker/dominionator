@@ -45,9 +45,9 @@ class Game(object):
     def _log(logfn: Callable[[str], None], message: str):
         logfn(f"[GAME]: {message}")
 
-    def _stat_log(self, player: dmp.Player, measure: str, value):
-        self.stat_log.add_item(
-            self.game_index, self.board.turn_num, player.name, measure, value
+    def _stat_log(self, player: dmp.Player):
+        self.stat_log.add_items_from_turnstats(
+            self.game_index, self.board.turn_num, player.name, player.turnstats
         )
 
     def _count_vp(self, shortname: str, player: dmp.Player):
@@ -94,10 +94,9 @@ class Game(object):
 
             playable_cards = player.get_playable_action_cards()
 
-        total_actions = used_actions + player.actions
-        self._stat_log(player, 'used_actions', used_actions)
-        self._stat_log(player, 'unused_actions', player.actions)
-        self._stat_log(player, 'total_actions', total_actions)
+        player.turnstats['used_actions'] = used_actions
+        player.turnstats['unused_actions'] = player.actions
+        player.turnstats['total_actions'] = used_actions + player.actions
 
     def _player_play_treasure_loop(self,
                                    player: dmp.Player,
@@ -105,6 +104,9 @@ class Game(object):
         logging.debug(f"[GAME]: {player.name} play treasure loop")
         playable_cards = player.get_playable_treasure_cards()
         autoplay_treasures = False
+
+        # any coins are from actions
+        action_coins = player.coins
 
         while len(playable_cards) > 0:
             if autoplay_treasures:
@@ -128,7 +130,12 @@ class Game(object):
 
                 playable_cards = player.get_playable_treasure_cards()
 
-        self._stat_log(player, 'played_coins', player.coins)
+        # any extra coins are from treasures
+        total_coins = player.coins
+        treasure_coins = total_coins - action_coins
+        player.turnstats['action_coins'] = action_coins
+        player.turnstats['treasure_coins'] = treasure_coins
+        player.turnstats['total_coins'] = total_coins
 
     def _player_buy_loop(self, player, agent):
         buyable_cards = self.board.get_buyable_supply_cards_for_active_player()
@@ -156,20 +163,15 @@ class Game(object):
             buyable_cards = self.board.get_buyable_supply_cards_for_active_player()
 
         self.recount_vp()
-        unused_coins = player.coins
-        used_coins = total_coins - unused_coins
-        unused_buys = player.buys
-        used_buys = total_buys - unused_buys
-        vp_gained = player.victory_points - vp_start_buy
+        player.turnstats['spent_coins'] = total_coins - player.coins
+        player.turnstats['unspent_coins'] = player.coins
 
-        self._stat_log(player, 'spent_coins', used_coins)
-        self._stat_log(player, 'unspent_coins', unused_coins)
-        self._stat_log(player, 'total_coins', total_coins)
-        self._stat_log(player, 'used_buys', used_buys)
-        self._stat_log(player, 'unused_buys', unused_buys)
-        self._stat_log(player, 'total_buys', total_buys)
-        self._stat_log(player, 'gained_vp', vp_gained)
-        self._stat_log(player, 'total_vp', player.victory_points)
+        player.turnstats['used_buys'] = total_buys - player.buys
+        player.turnstats['unused_buys'] = player.buys
+        player.turnstats['total_buys'] = total_buys
+
+        player.turnstats['gained_vp'] = player.victory_points - vp_start_buy
+        player.turnstats['total_vp'] = player.victory_points
 
     def active_player_turn_loop(self):
         player = self.board.get_active_player()
@@ -188,46 +190,47 @@ class Game(object):
 
         # Cleanup phase
         player.start_cleanup_phase()
+
+        # Reset and log turn statistics
         # No need to recount VP as this happens at the end of the buy phase
+        self._stat_log(player)
+        agent.reward_outcomes(player, self.board)
+        player.reset_turnstats()
 
     def check_winner(self):
         self.recount_vp()
-        p1_str = f"{self.board.players[0].name}:{self.board.players[0].victory_points}"
-        p2_str = f"{self.board.players[1].name}:{self.board.players[1].victory_points}"
+
+        p1, p2 = self.board.players[0], self.board.players[1]
+        p1_str = f"{p1.name}:{p1.victory_points}"
+        p2_str = f"{p2.name}:{p2.victory_points}"
+        margin = abs(p1.victory_points - p2.victory_points)
         self._log(info, f"Game ended. Final points {p1_str} {p2_str}")
 
-        if self.board.players[0].victory_points > self.board.players[1].victory_points:
-            self._log(info, f"{self.board.players[0].name} wins")
-            self._stat_log(self.board.players[0], 'won', 1)
-            self._stat_log(self.board.players[1], 'won', 0)
-            self._stat_log(self.board.players[0], 'tied', 0)
-            self._stat_log(self.board.players[1], 'tied', 0)
-            return self.board.players[0]
+        if p1.victory_points > p2.victory_points:
+            self._log(info, f"{p1.name} wins")
+            p1.turnstats = {'won_game': 1, 'lost_game': 0, 'tied_game': 0, 'win_margin': margin}
+            p2.turnstats = {'won_game': 0, 'lost_game': 1, 'tied_game': 0, 'win_margin': margin}
 
-        elif self.board.players[0].victory_points < self.board.players[1].victory_points:
-            self._log(info, f"{self.board.players[1].name} wins")
-            self._stat_log(self.board.players[0], 'won', 0)
-            self._stat_log(self.board.players[1], 'won', 1)
-            self._stat_log(self.board.players[0], 'tied', 0)
-            self._stat_log(self.board.players[1], 'tied', 0)
-            return self.board.players[1]
+        elif p1.victory_points < p2.victory_points:
+            self._log(info, f"{p2.name} wins")
+            p1.turnstats = {'won_game': 0, 'lost_game': 1, 'tied_game': 0, 'win_margin': margin}
+            p2.turnstats = {'won_game': 1, 'lost_game': 0, 'tied_game': 0, 'win_margin': margin}
 
         elif self.board.active_player_i == 0:
             # Players have equal points but second player hasn't had their turn
-            self._log(info, f"{self.board.players[1].name} wins")
-            self._stat_log(self.board.players[0], 'won', 0)
-            self._stat_log(self.board.players[1], 'won', 1)
-            self._stat_log(self.board.players[0], 'tied', 0)
-            self._stat_log(self.board.players[1], 'tied', 0)
-            return self.board.players[1]
+            self._log(info, f"{p2.name} wins")
+            p1.turnstats = {'won_game': 0, 'lost_game': 1, 'tied_game': 0, 'win_margin': margin}
+            p2.turnstats = {'won_game': 1, 'lost_game': 0, 'tied_game': 0, 'win_margin': margin}
 
         else:  # tie
             self._log(info, "tie")
-            self._stat_log(self.board.players[0], 'won', 0)
-            self._stat_log(self.board.players[1], 'won', 0)
-            self._stat_log(self.board.players[0], 'tied', 1)
-            self._stat_log(self.board.players[1], 'tied', 1)
-            return None
+            p1.turnstats = {'won_game': 0, 'lost_game': 0, 'tied_game': 1, 'win_margin': margin}
+            p2.turnstats = {'won_game': 0, 'lost_game': 0, 'tied_game': 1, 'win_margin': margin}
+
+        self._stat_log(p1)
+        self.agents[p1.name].reward_outcomes(p1, self.board)
+        self._stat_log(p2)
+        self.agents[p2.name].reward_outcomes(p1, self.board)
 
     def start_main_loop(self):
         game_ended = False
