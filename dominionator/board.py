@@ -9,11 +9,25 @@ import dominionator.player as dmp
 START_CARDS = tuple(5 * [dmcl.RemodelCard] + 5 * [dmcl.RemodelCard])
 
 
-def _supply_size(card_class: Type[dmcl.Card]):
+def _kingdom_supply_size(card_class: Type[dmcl.Card]):
     if dmcl.CardType.VICTORY in card_class.types:
         return 8
     else:
         return 10
+
+
+def _basic_supply_size(card_class: Type[dmcl.Card]):
+    if dmcl.CardType.VICTORY in card_class.types:
+        return 8
+    if dmcl.CardType.CURSE in card_class.types:
+        return 20
+    if dmcl.CardType.name == 'Copper':
+        return 46
+    if dmcl.CardType.name == 'Silver':
+        return 40
+    if dmcl.CardType.name == 'Gold':
+        return 30
+    raise ValueError(f"Unknown basic supply type {card_class.shortname}")
 
 
 class BoardState(object):
@@ -30,16 +44,15 @@ class BoardState(object):
         self.turn_num = 1
 
         supply_basic = {
-            dmcl.CopperCard.shortname: [dmcl.CopperCard()] * 46,
-            dmcl.SilverCard.shortname: [dmcl.SilverCard()] * 40,
-            dmcl.GoldCard.shortname: [dmcl.GoldCard()] * 30,
-            dmcl.EstateCard.shortname: [dmcl.EstateCard()] * 8,
-            dmcl.DuchyCard.shortname: [dmcl.DuchyCard()] * 8,
-            dmcl.ProvinceCard.shortname: [dmcl.ProvinceCard()] * 8,
-            dmcl.CurseCard.shortname: [dmcl.CurseCard()] * 20,
+            CardClass.shortname: [CardClass()] * _basic_supply_size(CardClass)
+            for CardClass in [
+                dmcl.CopperCard, dmcl.SilverCard, dmcl.GoldCard,
+                dmcl.EstateCard, dmcl.DuchyCard, dmcl.ProvinceCard,
+                dmcl.CurseCard
+            ]
         }
         supply_kingdom = {
-            CardClass.shortname: [CardClass()] * _supply_size(CardClass)
+            CardClass.shortname: [CardClass()] * _kingdom_supply_size(CardClass)
             for CardClass in [
                 dmcl.lookup[card_name] for card_name in kingdom
             ]
