@@ -45,6 +45,10 @@ def _create_turnstats_dict():
         'unused_buys': 0,
         'total_buys': 0,
 
+        # Cleanup phase - unplayed cards
+        'unplayed_action_cards': 0,
+        'unplayed_treasure_cards': 0,
+
         # VP changes and running total
         'gained_vp': 0,
         'total_vp': 0,

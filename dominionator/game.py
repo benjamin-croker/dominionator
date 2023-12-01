@@ -6,7 +6,7 @@ import dominionator.board as dmb
 import dominionator.player as dmp
 import dominionator.agents as dma
 import dominionator.cards.effects as dmce
-import dominionator.cards.cardlist as dcml
+import dominionator.cards.cardlist as dmcl
 import dominionator.statlog as dlog
 
 
@@ -60,7 +60,7 @@ class Game(object):
             [
                 self._count_vp(card.shortname, player)
                 for card in player.all_cards()
-                if card.is_type(dcml.CardType.VICTORY) or card.is_type(dcml.CardType.CURSE)
+                if card.is_type(dmcl.CardType.VICTORY) or card.is_type(dmcl.CardType.CURSE)
             ]
 
     def get_active_player_agent(self):
@@ -173,6 +173,16 @@ class Game(object):
         player.turnstats['gained_vp'] = player.victory_points - vp_start_buy
         player.turnstats['total_vp'] = player.victory_points
 
+    @staticmethod
+    def _player_cleanup(player):
+        # count cards still in hand
+        player.turnstats['unplayed_action_cards'] = player.count_cards_in_hand(
+            dmcl.CardType.ACTION
+        )
+        player.turnstats['unplayed_treasure_cards'] = player.count_cards_in_hand(
+            dmcl.CardType.TREASURE
+        )
+
     def active_player_turn_loop(self):
         player = self.board.get_active_player()
         agent = self.get_active_player_agent()
@@ -189,6 +199,7 @@ class Game(object):
         self._player_buy_loop(player, agent)
 
         # Cleanup phase
+        self._player_cleanup(player)
         player.start_cleanup_phase()
 
         # Reset and log turn statistics

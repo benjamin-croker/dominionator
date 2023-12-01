@@ -88,6 +88,7 @@ class MlAgent(dma_base.Agent):
         super().__init__()
         self._state = np.zeros(STATE_VECTOR_SIZE)
         self._action = np.zeros(ACTION_VECTOR_SIZE)
+        self._reward = 0
 
     def _reset_state_vector(self):
         # faster than reallocating (hopefully?)
@@ -95,6 +96,9 @@ class MlAgent(dma_base.Agent):
 
     def _reset_action_vector(self):
         self._action = self._action * 0
+
+    def _reset_reward(self):
+        self._reward = 0
 
     def _inc_state_card_count(self, location: str, shortname: str, card_count: int = 1):
         self._state[LOCATION_OFFSET[location] + CARD_OFFSET[shortname]] += card_count
@@ -182,3 +186,31 @@ class MlAgent(dma_base.Agent):
         [self._set_action(action_type, shortname)
          for shortname in allowed
          if shortname != dma_base.ALL_TREASURES]
+
+    def reward_outcomes(self, player: dmp.Player, board: dmb.BoardState):
+        self._reset_reward()
+        t_stats = player.turnstats
+
+        # 2 point per action played
+        self._reward += 2 * t_stats['used_actions']
+        # Bonus points if it's an attack
+        self._reward += t_stats['delivered_attacks']
+        # -1 point per unused action
+        self._reward -= t_stats['unused_actions']
+
+        # 1 point per coin generated
+        self._reward += t_stats['total_coins']
+        # 1 extra point per coin spent
+        self._reward += t_stats['spent_coins']
+
+        # 1 point per gained vp, but offset so estates are penalised
+        self._reward += int(t_stats['gained_vp'] > 0) * (t_stats['gained_vp'] - 2)
+
+        # -2 points per card left in hand
+        self._reward -= 2 * t_stats['unplayed_action_cards']
+        self._reward -= 2 * t_stats['unplayed_treasure_cards']
+
+        if t_stats['won_game'] is not None:
+            # lost_game should be set too
+            self._reward += (100 * t_stats['won_game'] * abs(t_stats['win_margin']))
+            self._reward -= (20 * t_stats['lost_game'] * abs(t_stats['win_margin']))
