@@ -208,7 +208,7 @@ class Game(object):
         agent.reward_outcomes(player, self.board)
         player.reset_turnstats()
 
-    def check_winner(self):
+    def finalise_game(self):
         self.recount_vp()
 
         p1, p2 = self.board.players[0], self.board.players[1]
@@ -240,8 +240,10 @@ class Game(object):
 
         self._stat_log(p1)
         self.agents[p1.name].reward_outcomes(p1, self.board)
+        self.agents[p1.name].finalise()
         self._stat_log(p2)
         self.agents[p2.name].reward_outcomes(p1, self.board)
+        self.agents[p2.name].finalise()
 
     def start_main_loop(self):
         game_ended = False
@@ -253,7 +255,7 @@ class Game(object):
                 self.board.advance_turn_to_next_player()
 
         self._log(info, str(self.board))
-        self.check_winner()
+        self.finalise_game()
 
     def __str__(self):
         return str(self.board)

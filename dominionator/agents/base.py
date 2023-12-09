@@ -70,3 +70,7 @@ class Agent(object):
     # For most agents this is not used, but is a capability for ML and RL agents.
     def reward_outcomes(self, player: dmp.Player, board: dmb.BoardState):
         pass
+
+    # Any steps that need to happen when the game ends can be added here
+    def finalise(self):
+        pass
