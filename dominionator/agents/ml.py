@@ -1,8 +1,8 @@
 import numpy as np
-import functools
-from typing import Set
+from typing import Set, Type, Callable
 
 import dominionator.agents.base as dma_base
+import dominionator.agents.bigmoney as dma_bigmoney
 import dominionator.board as dmb
 import dominionator.player as dmp
 
@@ -70,6 +70,8 @@ STATE_VECTOR_SIZE = CARD_COUNT_OFFSET + len(GAME_PHASE_OFFSET)
 # Of course, only a small number of actions will be possible at any point
 # TODO: create card-specific actions for cards like Sentry, which has an
 #   option to swap the top 2 cards on deck
+# TODO: this method is also inefficient, as this design allows for
+#   actions that NEVER occur like playing an action card as a treasure
 ACTION_TYPE_OFFSET = {
     'PLAY_ACTION_CARD_FROM_HAND': 0 * NCARDS,
     'PLAY_TREASURE_CARD_FROM_HAND': 1 * NCARDS,
@@ -88,7 +90,7 @@ ACTION_VECTOR_SIZE = len(ACTION_TYPE_OFFSET) * NCARDS
 MAX_STATES = 1000
 
 
-class MlAgent(dma_base.Agent):
+class _MlAgent(dma_base.Agent):
 
     def __init__(self):
         super().__init__()
@@ -124,7 +126,7 @@ class MlAgent(dma_base.Agent):
     def _set_state_game_phase_ind(self, phase_name: str, value: int):
         self._state[GAME_PHASE_OFFSET[phase_name]] = value
 
-    def _set_game_state_vector(self, board: dmb.BoardState):
+    def set_game_state_vector(self, board: dmb.BoardState):
         # Create a vector with the counts of all the cards in the different locations:
         # - In supply
         # - In trash
@@ -199,7 +201,7 @@ class MlAgent(dma_base.Agent):
         # only applies to "card-type" actions. I.e. selecting/playing/buying a card
         self._action_mask[ACTION_TYPE_OFFSET[action_type] + CARD_OFFSET[shortname]] = 1
 
-    def _set_action_mask_vector(self, action_type: str, allowed: Set[str]):
+    def set_action_mask_vector(self, action_type: str, allowed: Set[str]):
         self._reset_action_mask_vector()
         # ALL_TREASURES is just a handy shortcut, not needed for this agent
         [self._set_action_allowed_ind(action_type, shortname)
@@ -209,7 +211,7 @@ class MlAgent(dma_base.Agent):
     def _set_action_selected_ind(self, action_type: str, shortname: str):
         self._action_selected[ACTION_TYPE_OFFSET[action_type] + CARD_OFFSET[shortname]] = 1
 
-    def _set_action_selected_vector(self, action_type: str, selected: str):
+    def set_action_selected_vector(self, action_type: str, selected: str):
         self._reset_action_mask_vector()
         self._action_selected[ACTION_TYPE_OFFSET[action_type] + CARD_OFFSET[selected]] = 1
 
@@ -265,3 +267,111 @@ class MlAgent(dma_base.Agent):
     def finalise(self):
         self.collect_vectors()
         self.truncate_vectors()
+
+
+def wrap_deterministic_agent_with_state_logging(agent_class: Type[dma_base]):
+    # This function wraps any type of deterministic rules based agent with
+    # the state-based logging of the ML agent.
+
+    # This inheritance hierarchy will use MlAgent functions over agent_class
+    # functions.
+    class MLDeterministicAgent(_MlAgent, agent_class):
+        def __init__(self):
+            # Because MlAgent itself calls super(), agent_class init() method
+            # will be called (although it doesn't do anything)
+            super().__init__()
+
+        def _get_action(self,
+                        player: dmp.Player,
+                        board: dmb.BoardState,
+                        allowed: Set[str],
+                        action_type: str,
+                        parent_get_input_method: Callable) -> str:
+            # Reset and cleanup the previous action information
+            self.collect_vectors()
+            # Current state and action mask
+            self.set_game_state_vector(board)
+            self.set_action_mask_vector(action_type, allowed)
+            # Selected action
+            selected = parent_get_input_method(self, player, board, allowed)
+            self.set_action_selected_vector(action_type, selected)
+            return selected
+
+        def get_input_play_action_card_from_hand(self,
+                                                 player: dmp.Player,
+                                                 board: dmb.BoardState,
+                                                 allowed: Set[str]) -> str:
+            return self._get_action(
+                player, board, allowed, 'PLAY_ACTION_CARD_FROM_HAND',
+                agent_class.get_input_play_action_card_from_hand
+            )
+
+        def get_input_play_treasure_card_from_hand(self,
+                                                   player: dmp.Player,
+                                                   board: dmb.BoardState,
+                                                   allowed: Set[str]) -> str:
+            return self._get_action(
+                player, board, allowed, 'PLAY_TREASURE_CARD_FROM_HAND',
+                agent_class.get_input_play_treasure_card_from_hand
+            )
+
+        def get_input_discard_card_from_hand(self,
+                                             player: dmp.Player,
+                                             board: dmb.BoardState,
+                                             allowed: Set[str]) -> str:
+            return self._get_action(
+                player, board, allowed, 'DISCARD_CARD_FROM_HAND',
+                agent_class.get_input_discard_card_from_hand
+            )
+
+        def get_input_trash_card_from_hand(self,
+                                           player: dmp.Player,
+                                           board: dmb.BoardState,
+                                           allowed: Set[str]) -> str:
+            return self._get_action(
+                player, board, allowed, 'TRASH_CARD_FROM_HAND',
+                agent_class.get_input_trash_card_from_hand
+            )
+
+        def get_input_reveal_card_from_hand(self,
+                                            player: dmp.Player,
+                                            board: dmb.BoardState,
+                                            allowed: Set[str]) -> str:
+            return self._get_action(
+                player, board, allowed, 'REVEAL_CARD_FROM_HAND',
+                agent_class.get_input_reveal_card_from_hand
+            )
+
+        def get_input_topdeck_card_from_discard(self,
+                                                player: dmp.Player,
+                                                board: dmb.BoardState,
+                                                allowed: Set[str]) -> str:
+            return self._get_action(
+                player, board, allowed, 'TOPDECK_CARD_FROM_DISCARD',
+                agent_class.get_input_topdeck_card_from_discard
+            )
+
+        def get_input_buy_card_from_supply(self,
+                                           player: dmp.Player,
+                                           board: dmb.BoardState,
+                                           allowed: Set[str]) -> str:
+            return self._get_action(
+                player, board, allowed, 'BUY_CARD_FROM_SUPPLY',
+                agent_class.get_input_buy_card_from_supply
+            )
+
+        def get_input_gain_card_from_supply(self,
+                                            player: dmp.Player,
+                                            board: dmb.BoardState,
+                                            allowed: Set[str]) -> str:
+            return self._get_action(
+                player, board, allowed, 'GAIN_CARD_FROM_SUPPLY',
+                agent_class.get_input_gain_card_from_supply
+            )
+
+    return MLDeterministicAgent
+
+
+MlSmithyBigMoneyAgent = wrap_deterministic_agent_with_state_logging(
+    dma_bigmoney.SmithyBigMoneyAgent
+)
