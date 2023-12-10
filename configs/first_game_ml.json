@@ -1,0 +1,39 @@
+{
+  "game": {
+    "players": {
+      "Player1": {
+        "agent": "MlSmithyBigMoney"
+      },
+      "Player2": {
+        "agent": "BigMoney"
+      }
+    },
+    "kingdom": [
+      "Cellar",
+      "Market",
+      "Merchant",
+      "Militia",
+      "Mine",
+      "Moat",
+      "Remodel",
+      "Smithy",
+      "Village",
+      "Workshop"
+    ],
+    "start_cards": [
+      "Copper",
+      "Copper",
+      "Copper",
+      "Copper",
+      "Copper",
+      "Copper",
+      "Copper",
+      "Estate",
+      "Estate",
+      "Estate"
+    ]
+  },
+  "n_games": 1,
+  "statistics_log_filname": "first_game_ml.csv",
+  "terminal_log_level": 60
+}

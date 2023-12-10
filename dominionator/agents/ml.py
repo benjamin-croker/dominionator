@@ -1,4 +1,7 @@
 import numpy as np
+import uuid
+import os
+from pathlib import Path
 from typing import Set, Type, Callable
 
 import dominionator.cards.cardlist as dmcl
@@ -21,18 +24,10 @@ import dominionator.player as dmp
 # - Player 2 action phase, buy phase
 
 # There are 26 kingdom and 7 basic = 33 unique cards in total
-NCARDS = 33
+NCARDS = len(dmcl.CARD_LIST)
 # Define order of cards, used for offsets in the vector
-# All cards, for discarding, gaining, trashing etc
-CARD_OFFSET = {
-    '$1': 0,
-    '$2': 1,
-    # ...
-    'AR': 32  # Artisan
-}
-# Action cards only - for "play action card" actions
-
-# Treasure cards only - for "play treasure card" actions
+# All cards, for discarding, gaining, trashing, tracking location etc
+CARD_OFFSET = {c.shortname: i for i, c in enumerate(dmcl.CARD_LIST)}
 
 # There are 10 locations in total. Define order of the different location counts
 # within the vector in multiples of NCARDS
@@ -61,7 +56,7 @@ GAME_PHASE_OFFSET = {
 STATE_VECTOR_SIZE = CARD_COUNT_OFFSET + len(GAME_PHASE_OFFSET)
 
 # Action vector is generally framed as all possible combinations of the 33 cards
-# in Dominion, and actions defined by the base agent:
+# in Dominion, and all actions defined by the base agent:
 # - get_input_play_action_card_from_hand
 # - get_input_play_treasure_card_from_hand
 # - get_input_discard_card_from_hand
@@ -73,10 +68,11 @@ STATE_VECTOR_SIZE = CARD_COUNT_OFFSET + len(GAME_PHASE_OFFSET)
 # Each position in the action vector means something specific e.g:
 # - "Reveal a Gold from hand"
 # Of course, only a small number of actions will be possible at any point
+# For some actions however, only a subset of cards can ever apply, and the
+# vector offsets are adjusted accordingly. E.g. can't play Gold when choosing
+# an action to play.
 # TODO: create card-specific actions for cards like Sentry, which has an
 #   option to swap the top 2 cards on deck
-# TODO: this method is also inefficient, as this design allows for
-#   actions that NEVER occur like playing an action card as a treasure
 ACTION_TYPE_OFFSET = {
     'PLAY_ACTION_CARD_FROM_HAND': 0 * NCARDS,
     'PLAY_TREASURE_CARD_FROM_HAND': 1 * NCARDS,
@@ -99,17 +95,21 @@ class _MlAgent(dma_base.Agent):
 
     def __init__(self):
         super().__init__()
+        self._agent_id = ''
+        self._instance_id = str(uuid.uuid4())
         # Working vectors that are added
-        self._state = np.zeros(STATE_VECTOR_SIZE)
-        self._action_mask = np.zeros(ACTION_VECTOR_SIZE)
-        self._action_selected = np.zeros(ACTION_VECTOR_SIZE)
+        self._info = ''  # action type that the working vectors apply to
+        self._state = np.zeros(STATE_VECTOR_SIZE, dtype=np.int16)
+        self._action_mask = np.zeros(ACTION_VECTOR_SIZE, dtype=np.int16)
+        self._action_selected = np.zeros(ACTION_VECTOR_SIZE, dtype=np.int16)
         self._reward = 0
 
-        # Vectors updated incremendally throughout the game
-        self._state_array = np.zeros((MAX_STATES, STATE_VECTOR_SIZE))
-        self._action_mask_array = np.zeros((MAX_STATES, ACTION_VECTOR_SIZE))
-        self._action_selected_array = np.zeros((MAX_STATES, ACTION_VECTOR_SIZE))
-        self._reward_array = np.zeros((MAX_STATES, 1))
+        # Vectors updated incrementally throughout the game
+        self._info_array = np.zeros((MAX_STATES, 1), dtype=str)
+        self._state_array = np.zeros((MAX_STATES, STATE_VECTOR_SIZE), dtype=np.int16)
+        self._action_mask_array = np.zeros((MAX_STATES, ACTION_VECTOR_SIZE), dtype=np.int16)
+        self._action_selected_array = np.zeros((MAX_STATES, ACTION_VECTOR_SIZE), dtype=np.int16)
+        self._reward_array = np.zeros((MAX_STATES, 1), dtype=np.int16)
         self._index = 0
 
     def _reset_state_vector(self):
@@ -220,6 +220,9 @@ class _MlAgent(dma_base.Agent):
         self._reset_action_mask_vector()
         self._action_selected[ACTION_TYPE_OFFSET[action_type] + CARD_OFFSET[selected]] = 1
 
+    def set_action_info(self, action_type: str):
+        self._info = action_type
+
     # Call this before any action input is required, (and when the game ends).
     # Doing so will ensure that any rewards gained are associated with the previous
     # state/action before adding a new entry.
@@ -227,6 +230,7 @@ class _MlAgent(dma_base.Agent):
     # Note that the first index will be all zeros in all arrays, as no prior information
     # exists when the first action has been taken
     def collect_vectors(self):
+        self._info_array[self._index, 0] = self._info
         self._state_array[self._index, :] = self._state
         self._action_mask_array[self._index, :] = self._action_mask
         self._action_selected_array[self._index, :] = self._action_selected
@@ -273,6 +277,31 @@ class _MlAgent(dma_base.Agent):
         self.collect_vectors()
         self.truncate_vectors()
 
+        # Log the vectors
+        outdir = os.path.join('logs', 'ml_agent', self._agent_id)
+        Path(outdir).mkdir(parents=True, exist_ok=True)
+
+        np.savetxt(
+            fname=os.path.join(outdir, f'{self._instance_id}_info'),
+            X=self._info_array, fmt='%s'  # %s is string format
+        )
+        np.savetxt(
+            fname=os.path.join(outdir, f'{self._instance_id}_state'),
+            X=self._state_array, fmt='%d'  # %d is integer format
+        )
+        np.savetxt(
+            fname=os.path.join(outdir, f'{self._instance_id}_action_mask'),
+            X=self._action_mask_array, fmt='%d'
+        )
+        np.savetxt(
+            fname=os.path.join(outdir, f'{self._instance_id}_action_selected'),
+            X=self._action_selected_array, fmt='%d'
+        )
+        np.savetxt(
+            fname=os.path.join(outdir, f'{self._instance_id}_reward'),
+            X=self._reward_array, fmt='%d'
+        )
+
 
 def wrap_deterministic_agent_with_state_logging(agent_class: Type[dma_base]):
     # This function wraps any type of deterministic rules based agent with
@@ -285,6 +314,7 @@ def wrap_deterministic_agent_with_state_logging(agent_class: Type[dma_base]):
             # Because MlAgent itself calls super(), agent_class init() method
             # will be called (although it doesn't do anything)
             super().__init__()
+            self._agent_id = f'MLDeterministicAgent.{agent_class.__name__}'
 
         def _get_action(self,
                         player: dmp.Player,
@@ -295,6 +325,7 @@ def wrap_deterministic_agent_with_state_logging(agent_class: Type[dma_base]):
             # Reset and cleanup the previous action information
             self.collect_vectors()
             # Current state and action mask
+            self.set_action_info(action_type)
             self.set_game_state_vector(board)
             self.set_action_mask_vector(action_type, allowed)
             # Selected action
