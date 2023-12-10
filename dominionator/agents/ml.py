@@ -4,95 +4,12 @@ import os
 from pathlib import Path
 from typing import Set, Type, Callable
 
-import dominionator.cards.cardlist as dmcl
 import dominionator.agents.base as dma_base
 import dominionator.agents.bigmoney as dma_bigmoney
 import dominionator.board as dmb
 import dominionator.player as dmp
-
-# State vector is primarily formed from vectors with card counts in each location:
-# - In supply
-# - In trash
-# - Player 1 deck, hand, inplay, discard
-# - Player 2 deck, hand, inplay, discard
-# Other data captured in the game state is
-# - Game turn count
-# - Player 1 score
-# - Player 2 score
-# Indicators for tracking the point within a player's turn
-# - Player 1 action phase, buy phase
-# - Player 2 action phase, buy phase
-
-# There are 26 kingdom and 7 basic = 33 unique cards in total
-NCARDS = len(dmcl.CARD_LIST)
-# Define order of cards, used for offsets in the vector
-# All cards, for discarding, gaining, trashing, tracking location etc
-CARD_OFFSET = {c.shortname: i for i, c in enumerate(dmcl.CARD_LIST)}
-
-# Number of options for most actions also inlcudes NO_SELECT = '-1' and ALL_TREASURES = '$A'
-NACTION = NCARDS + 2
-ACTION_OFFSET = CARD_OFFSET | {'-1': len(CARD_OFFSET), '$A': len(CARD_OFFSET) + 1}
-
-# There are 10 locations in total. Define order of the different location counts
-# within the vector in multiples of NCARDS
-LOCATION_OFFSET = {
-    'SUPPLY': 0 * NCARDS,
-    'TRASH': 1 * NCARDS,
-    'PLAYER1_DECK': 2 * NCARDS,
-    'PLAYER1_HAND': 3 * NCARDS,
-    'PLAYER1_INPLAY': 4 * NCARDS,
-    'PLAYER1_DISCARD': 5 * NCARDS,
-    'PLAYER2_DECK': 6 * NCARDS,
-    'PLAYER2_HAND': 7 * NCARDS,
-    'PLAYER2_INPLAY': 8 * NCARDS,
-    'PLAYER2_DISCARD': 9 * NCARDS
-}
-CARD_COUNT_OFFSET = len(LOCATION_OFFSET) * NCARDS
-GAME_PHASE_OFFSET = {
-    'GAME_TURN': 0 + CARD_COUNT_OFFSET,
-    'PLAYER1_POINTS': 1 + CARD_COUNT_OFFSET,
-    'PLAYER2_POINTS': 2 + CARD_COUNT_OFFSET,
-    'PLAYER1_ACTION_PHASE': 3 + CARD_COUNT_OFFSET,
-    'PLAYER1_BUY_PHASE': 4 + CARD_COUNT_OFFSET,
-    'PLAYER2_ACTION_PHASE': 5 + CARD_COUNT_OFFSET,
-    'PLAYER2_BUY_PHASE': 6 + CARD_COUNT_OFFSET
-}
-STATE_VECTOR_SIZE = CARD_COUNT_OFFSET + len(GAME_PHASE_OFFSET)
-
-# Action vector is generally framed as all possible combinations of the 33 cards
-# in Dominion, and all actions defined by the base agent:
-# - get_input_play_action_card_from_hand
-# - get_input_play_treasure_card_from_hand
-# - get_input_discard_card_from_hand
-# - get_input_trash_card_from_hand
-# - get_input_reveal_card_from_hand
-# - get_input_topdeck_card_from_discard
-# - get_input_buy_card_from_supply
-# - get_input_gain_card_from_supply
-# Each position in the action vector means something specific e.g:
-# - "Reveal a Gold from hand"
-# Of course, only a small number of actions will be possible at any point
-# For some actions however, only a subset of cards can ever apply, and the
-# vector offsets are adjusted accordingly. E.g. can't play Gold when choosing
-# an action to play.
-# TODO: create card-specific actions for cards like Sentry, which has an
-#   option to swap the top 2 cards on deck
-ACTION_TYPE_OFFSET = {
-    'PLAY_ACTION_CARD_FROM_HAND': 0 * NACTION,
-    'PLAY_TREASURE_CARD_FROM_HAND': 1 * NACTION,
-    'DISCARD_CARD_FROM_HAND': 2 * NACTION,
-    'TRASH_CARD_FROM_HAND': 3 * NACTION,
-    'REVEAL_CARD_FROM_HAND': 4 * NACTION,
-    'TOPDECK_CARD_FROM_DISCARD': 5 * NACTION,
-    'BUY_CARD_FROM_SUPPLY': 6 * NACTION,
-    'GAIN_CARD_FROM_SUPPLY': 7 * NACTION,
-}
-ACTION_VECTOR_SIZE = len(ACTION_TYPE_OFFSET) * NACTION
-
-# Maximum number of state/action/reward states to track
-# This is needed so the arrays can be pre-allocated, rather than dynamically
-# created in the game loops.
-MAX_STATES = 1000
+# Constants defining vector structure
+from dominionator.agents.vector_spec import *
 
 
 class _MlAgent(dma_base.Agent):
@@ -109,7 +26,7 @@ class _MlAgent(dma_base.Agent):
         self._reward = 0
 
         # Vectors updated incrementally throughout the game
-        self._info_array = np.zeros((MAX_STATES, 1), dtype=str)
+        self._info_array = np.zeros((MAX_STATES, 1), dtype='U32')  # 32 char limit
         self._state_array = np.zeros((MAX_STATES, STATE_VECTOR_SIZE), dtype=np.int16)
         self._action_mask_array = np.zeros((MAX_STATES, ACTION_VECTOR_SIZE), dtype=np.int16)
         self._action_selected_array = np.zeros((MAX_STATES, ACTION_VECTOR_SIZE), dtype=np.int16)
@@ -218,7 +135,7 @@ class _MlAgent(dma_base.Agent):
         self._action_selected[ACTION_TYPE_OFFSET[action_type] + ACTION_OFFSET[shortname]] = 1
 
     def set_action_selected_vector(self, action_type: str, selected: str):
-        self._reset_action_mask_vector()
+        self._reset_action_selected_vector()
         self._action_selected[ACTION_TYPE_OFFSET[action_type] + ACTION_OFFSET[selected]] = 1
 
     def set_action_info(self, action_type: str):
@@ -241,6 +158,7 @@ class _MlAgent(dma_base.Agent):
 
     def truncate_vectors(self):
         # drop the first row, and any rows with no data
+        self._info_array = self._info_array[1:self._index, 0]
         self._state_array = self._state_array[1:self._index, :]
         self._action_mask_array = self._action_mask_array[1:self._index, :]
         self._action_selected_array = self._action_selected_array[1:self._index, :]
@@ -285,23 +203,28 @@ class _MlAgent(dma_base.Agent):
 
         np.savetxt(
             fname=os.path.join(outdir, f'{self._instance_id}_info.csv'),
-            X=self._info_array, delimiter=',', fmt='%s'  # %s is string format
+            X=self._info_array, delimiter=',', fmt='%s',  # %s is string format
+            header='ACTION_TYPE', comments=''
         )
         np.savetxt(
             fname=os.path.join(outdir, f'{self._instance_id}_state.csv'),
-            X=self._state_array, delimiter=',', fmt='%d'  # %d is integer format
+            X=self._state_array, delimiter=',', fmt='%d',  # %d is integer format
+            header=','.join(STATE_VECTOR_HEADER), comments=''
         )
         np.savetxt(
             fname=os.path.join(outdir, f'{self._instance_id}_action_mask.csv'),
-            X=self._action_mask_array, delimiter=',', fmt='%d'
+            X=self._action_mask_array, delimiter=',', fmt='%d',
+            header=','.join(ACTION_VECTOR_HEADER), comments=''
         )
         np.savetxt(
             fname=os.path.join(outdir, f'{self._instance_id}_action_selected.csv'),
-            X=self._action_selected_array, delimiter=',', fmt='%d'
+            X=self._action_selected_array, delimiter=',', fmt='%d',
+            header=','.join(ACTION_VECTOR_HEADER), comments=''
         )
         np.savetxt(
             fname=os.path.join(outdir, f'{self._instance_id}_reward.csv'),
-            X=self._reward_array, delimiter=',', fmt='%d'
+            X=self._reward_array, delimiter=',', fmt='%d',
+            header='REWARD', comments=''
         )
 
 
