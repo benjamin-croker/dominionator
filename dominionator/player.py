@@ -24,41 +24,41 @@ class Location(Enum):
 TURN_DRAW = 5
 
 
-def _create_turnstats_dict():
+def _create_turnstats_dict(in_progess_val=0, game_ended_val=None):
     return {
         # Action phase
-        'used_actions': 0,
-        'unused_actions': 0,
-        'total_actions': 0,
+        'used_actions': in_progess_val,
+        'unused_actions': in_progess_val,
+        'total_actions': in_progess_val,
 
         # Attack interactions
-        'delivered_attacks': 0,
+        'delivered_attacks': in_progess_val,
 
         # Buy phase - coins and their source
-        'action_coins': 0,
-        'treasure_coins': 0,
+        'action_coins': in_progess_val,
+        'treasure_coins': in_progess_val,
         # Buy phase - purchase cards
-        'spent_coins': 0,
-        'unspent_coins': 0,
-        'total_coins': 0,
-        'used_buys': 0,
-        'unused_buys': 0,
-        'total_buys': 0,
+        'spent_coins': in_progess_val,
+        'unspent_coins': in_progess_val,
+        'total_coins': in_progess_val,
+        'used_buys': in_progess_val,
+        'unused_buys': in_progess_val,
+        'total_buys': in_progess_val,
 
         # Cleanup phase - unplayed cards
-        'unplayed_action_cards': 0,
-        'unplayed_treasure_cards': 0,
+        'unplayed_action_cards': in_progess_val,
+        'unplayed_treasure_cards': in_progess_val,
 
         # VP changes and running total
-        'gained_vp': 0,
-        'total_vp': 0,
+        'gained_vp': in_progess_val,
+        'total_vp': in_progess_val,
 
         # Overall game outcome. Values with None will be ignored until set, which
         # is the desired behaviour for these statistics
-        'won_game': None,
-        'lost_game': None,
-        'tied_game': None,
-        'win_margin': None
+        'won_game': game_ended_val,
+        'lost_game': game_ended_val,
+        'tied_game': game_ended_val,
+        'win_margin': game_ended_val
     }
 
 
@@ -241,8 +241,8 @@ class Player(object):
         # Draw 5 cards
         self.draw_from_deck(TURN_DRAW)
 
-    def reset_turnstats(self):
-        self.turnstats = _create_turnstats_dict()
+    def reset_turnstats(self, in_progess_val=0, game_ended_val=None):
+        self.turnstats = _create_turnstats_dict(in_progess_val, game_ended_val)
 
     def all_cards(self) -> List[dmcl.Card]:
         return self.hand + self.deck + self.discard + self.inplay

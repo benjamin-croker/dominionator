@@ -29,6 +29,10 @@ NCARDS = len(dmcl.CARD_LIST)
 # All cards, for discarding, gaining, trashing, tracking location etc
 CARD_OFFSET = {c.shortname: i for i, c in enumerate(dmcl.CARD_LIST)}
 
+# Number of options for most actions also inlcudes NO_SELECT = '-1' and ALL_TREASURES = '$A'
+NACTION = NCARDS + 2
+ACTION_OFFSET = CARD_OFFSET | {'-1': len(CARD_OFFSET), '$A': len(CARD_OFFSET) + 1}
+
 # There are 10 locations in total. Define order of the different location counts
 # within the vector in multiples of NCARDS
 LOCATION_OFFSET = {
@@ -74,16 +78,16 @@ STATE_VECTOR_SIZE = CARD_COUNT_OFFSET + len(GAME_PHASE_OFFSET)
 # TODO: create card-specific actions for cards like Sentry, which has an
 #   option to swap the top 2 cards on deck
 ACTION_TYPE_OFFSET = {
-    'PLAY_ACTION_CARD_FROM_HAND': 0 * NCARDS,
-    'PLAY_TREASURE_CARD_FROM_HAND': 1 * NCARDS,
-    'DISCARD_CARD_FROM_HAND': 2 * NCARDS,
-    'TRASH_CARD_FROM_HAND': 3 * NCARDS,
-    'REVEAL_CARD_FROM_HAND': 4 * NCARDS,
-    'TOPDECK_CARD_FROM_DISCARD': 5 * NCARDS,
-    'BUY_CARD_FROM_SUPPLY': 6 * NCARDS,
-    'GAIN_CARD_FROM_SUPPLY': 7 * NCARDS,
+    'PLAY_ACTION_CARD_FROM_HAND': 0 * NACTION,
+    'PLAY_TREASURE_CARD_FROM_HAND': 1 * NACTION,
+    'DISCARD_CARD_FROM_HAND': 2 * NACTION,
+    'TRASH_CARD_FROM_HAND': 3 * NACTION,
+    'REVEAL_CARD_FROM_HAND': 4 * NACTION,
+    'TOPDECK_CARD_FROM_DISCARD': 5 * NACTION,
+    'BUY_CARD_FROM_SUPPLY': 6 * NACTION,
+    'GAIN_CARD_FROM_SUPPLY': 7 * NACTION,
 }
-ACTION_VECTOR_SIZE = len(ACTION_TYPE_OFFSET) * NCARDS
+ACTION_VECTOR_SIZE = len(ACTION_TYPE_OFFSET) * NACTION
 
 # Maximum number of state/action/reward states to track
 # This is needed so the arrays can be pre-allocated, rather than dynamically
@@ -204,21 +208,18 @@ class _MlAgent(dma_base.Agent):
 
     def _set_action_allowed_ind(self, action_type: str, shortname: str):
         # only applies to "card-type" actions. I.e. selecting/playing/buying a card
-        self._action_mask[ACTION_TYPE_OFFSET[action_type] + CARD_OFFSET[shortname]] = 1
+        self._action_mask[ACTION_TYPE_OFFSET[action_type] + ACTION_OFFSET[shortname]] = 1
 
     def set_action_mask_vector(self, action_type: str, allowed: Set[str]):
         self._reset_action_mask_vector()
-        # ALL_TREASURES is just a handy shortcut, not needed for this agent
-        [self._set_action_allowed_ind(action_type, shortname)
-         for shortname in allowed
-         if shortname != dma_base.ALL_TREASURES]
+        [self._set_action_allowed_ind(action_type, shortname) for shortname in allowed]
 
     def _set_action_selected_ind(self, action_type: str, shortname: str):
-        self._action_selected[ACTION_TYPE_OFFSET[action_type] + CARD_OFFSET[shortname]] = 1
+        self._action_selected[ACTION_TYPE_OFFSET[action_type] + ACTION_OFFSET[shortname]] = 1
 
     def set_action_selected_vector(self, action_type: str, selected: str):
         self._reset_action_mask_vector()
-        self._action_selected[ACTION_TYPE_OFFSET[action_type] + CARD_OFFSET[selected]] = 1
+        self._action_selected[ACTION_TYPE_OFFSET[action_type] + ACTION_OFFSET[selected]] = 1
 
     def set_action_info(self, action_type: str):
         self._info = action_type
@@ -249,24 +250,25 @@ class _MlAgent(dma_base.Agent):
         self._reset_reward()
         t_stats = player.turnstats
 
-        # 2 point per action played
-        self._reward += 2 * t_stats['used_actions']
-        # Bonus points if it's an attack
-        self._reward += t_stats['delivered_attacks']
-        # -1 point per unused action
-        self._reward -= t_stats['unused_actions']
+        if t_stats['used_actions'] is not None:
+            # 2 point per action played
+            self._reward += 2 * t_stats['used_actions']
+            # Bonus points if it's an attack
+            self._reward += t_stats['delivered_attacks']
+            # -1 point per unused action
+            self._reward -= t_stats['unused_actions']
 
-        # 1 point per coin generated
-        self._reward += t_stats['total_coins']
-        # 1 extra point per coin spent
-        self._reward += t_stats['spent_coins']
+            # 1 point per coin generated
+            self._reward += t_stats['total_coins']
+            # 1 extra point per coin spent
+            self._reward += t_stats['spent_coins']
 
-        # 1 point per gained vp, but offset so estates are penalised
-        self._reward += int(t_stats['gained_vp'] > 0) * (t_stats['gained_vp'] - 2)
+            # 1 point per gained vp, but offset so estates are penalised
+            self._reward += int(t_stats['gained_vp'] > 0) * (t_stats['gained_vp'] - 2)
 
-        # -2 points per card left in hand
-        self._reward -= 2 * t_stats['unplayed_action_cards']
-        self._reward -= 2 * t_stats['unplayed_treasure_cards']
+            # -2 points per card left in hand
+            self._reward -= 2 * t_stats['unplayed_action_cards']
+            self._reward -= 2 * t_stats['unplayed_treasure_cards']
 
         if t_stats['won_game'] is not None:
             # lost_game should be set too
@@ -282,24 +284,24 @@ class _MlAgent(dma_base.Agent):
         Path(outdir).mkdir(parents=True, exist_ok=True)
 
         np.savetxt(
-            fname=os.path.join(outdir, f'{self._instance_id}_info'),
-            X=self._info_array, fmt='%s'  # %s is string format
+            fname=os.path.join(outdir, f'{self._instance_id}_info.csv'),
+            X=self._info_array, delimiter=',', fmt='%s'  # %s is string format
         )
         np.savetxt(
-            fname=os.path.join(outdir, f'{self._instance_id}_state'),
-            X=self._state_array, fmt='%d'  # %d is integer format
+            fname=os.path.join(outdir, f'{self._instance_id}_state.csv'),
+            X=self._state_array, delimiter=',', fmt='%d'  # %d is integer format
         )
         np.savetxt(
-            fname=os.path.join(outdir, f'{self._instance_id}_action_mask'),
-            X=self._action_mask_array, fmt='%d'
+            fname=os.path.join(outdir, f'{self._instance_id}_action_mask.csv'),
+            X=self._action_mask_array, delimiter=',', fmt='%d'
         )
         np.savetxt(
-            fname=os.path.join(outdir, f'{self._instance_id}_action_selected'),
-            X=self._action_selected_array, fmt='%d'
+            fname=os.path.join(outdir, f'{self._instance_id}_action_selected.csv'),
+            X=self._action_selected_array, delimiter=',', fmt='%d'
         )
         np.savetxt(
-            fname=os.path.join(outdir, f'{self._instance_id}_reward'),
-            X=self._reward_array, fmt='%d'
+            fname=os.path.join(outdir, f'{self._instance_id}_reward.csv'),
+            X=self._reward_array, delimiter=',', fmt='%d'
         )
 
 
@@ -314,7 +316,7 @@ def wrap_deterministic_agent_with_state_logging(agent_class: Type[dma_base]):
             # Because MlAgent itself calls super(), agent_class init() method
             # will be called (although it doesn't do anything)
             super().__init__()
-            self._agent_id = f'MLDeterministicAgent.{agent_class.__name__}'
+            self._agent_id = f'MLDeterministicAgent-{agent_class.__name__}'
 
         def _get_action(self,
                         player: dmp.Player,

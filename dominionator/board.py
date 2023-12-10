@@ -21,13 +21,13 @@ def _basic_supply_size(card_class: Type[dmcl.Card]):
         return 8
     if dmcl.CardType.CURSE in card_class.types:
         return 20
-    if dmcl.CardType.name == 'Copper':
+    if card_class.name == 'Copper':
         return 46
-    if dmcl.CardType.name == 'Silver':
+    if card_class.name == 'Silver':
         return 40
-    if dmcl.CardType.name == 'Gold':
+    if card_class.name == 'Gold':
         return 30
-    raise ValueError(f"Unknown basic supply type {card_class.shortname}")
+    raise ValueError(f"Unknown basic supply type {card_class.name}")
 
 
 class BoardState(object):

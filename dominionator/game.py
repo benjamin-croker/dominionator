@@ -208,6 +208,11 @@ class Game(object):
         agent.reward_outcomes(player, self.board)
         player.reset_turnstats()
 
+    @staticmethod
+    def _win_stats(player: dmp.Player, stats: dict):
+        player.reset_turnstats(in_progess_val=None, game_ended_val=0)
+        player.turnstats = player.turnstats | stats
+
     def finalise_game(self):
         self.recount_vp()
 
@@ -219,24 +224,24 @@ class Game(object):
 
         if p1.victory_points > p2.victory_points:
             self._log(info, f"{p1.name} wins")
-            p1.turnstats = {'won_game': 1, 'lost_game': 0, 'tied_game': 0, 'win_margin': margin}
-            p2.turnstats = {'won_game': 0, 'lost_game': 1, 'tied_game': 0, 'win_margin': margin}
+            self._win_stats(p1, {'won_game': 1, 'lost_game': 0, 'tied_game': 0, 'win_margin': margin})
+            self._win_stats(p2, {'won_game': 0, 'lost_game': 1, 'tied_game': 0, 'win_margin': margin})
 
         elif p1.victory_points < p2.victory_points:
             self._log(info, f"{p2.name} wins")
-            p1.turnstats = {'won_game': 0, 'lost_game': 1, 'tied_game': 0, 'win_margin': margin}
-            p2.turnstats = {'won_game': 1, 'lost_game': 0, 'tied_game': 0, 'win_margin': margin}
+            self._win_stats(p1, {'won_game': 0, 'lost_game': 1, 'tied_game': 0, 'win_margin': margin})
+            self._win_stats(p2, {'won_game': 1, 'lost_game': 0, 'tied_game': 0, 'win_margin': margin})
 
         elif self.board.active_player_i == 0:
             # Players have equal points but second player hasn't had their turn
             self._log(info, f"{p2.name} wins")
-            p1.turnstats = {'won_game': 0, 'lost_game': 1, 'tied_game': 0, 'win_margin': margin}
-            p2.turnstats = {'won_game': 1, 'lost_game': 0, 'tied_game': 0, 'win_margin': margin}
+            self._win_stats(p1, {'won_game': 0, 'lost_game': 1, 'tied_game': 0, 'win_margin': margin})
+            self._win_stats(p2, {'won_game': 1, 'lost_game': 0, 'tied_game': 0, 'win_margin': margin})
 
         else:  # tie
             self._log(info, "tie")
-            p1.turnstats = {'won_game': 0, 'lost_game': 0, 'tied_game': 1, 'win_margin': margin}
-            p2.turnstats = {'won_game': 0, 'lost_game': 0, 'tied_game': 1, 'win_margin': margin}
+            self._win_stats(p1, {'won_game': 0, 'lost_game': 0, 'tied_game': 1, 'win_margin': margin})
+            self._win_stats(p2, {'won_game': 0, 'lost_game': 0, 'tied_game': 1, 'win_margin': margin})
 
         self._stat_log(p1)
         self.agents[p1.name].reward_outcomes(p1, self.board)
