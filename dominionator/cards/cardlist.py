@@ -177,43 +177,13 @@ class MineCard(Card):
     types = {CardType.ACTION}
 
 
-lookup = {
-    CurseCard.shortname: CurseCard,
-    CurseCard.name: CurseCard,
-    EstateCard.shortname: EstateCard,
-    EstateCard.name: EstateCard,
-    DuchyCard.shortname: DuchyCard,
-    DuchyCard.name: DuchyCard,
-    ProvinceCard.shortname: ProvinceCard,
-    ProvinceCard.name: ProvinceCard,
-    CopperCard.shortname: CopperCard,
-    CopperCard.name: CopperCard,
-    SilverCard.shortname: SilverCard,
-    SilverCard.name: SilverCard,
-    GoldCard.shortname: GoldCard,
-    GoldCard.name: GoldCard,
-    CellarCard.shortname: CellarCard,
-    CellarCard.name: CellarCard,
-    ChapelCard.shortname: ChapelCard,
-    ChapelCard.name: ChapelCard,
-    MoatCard.shortname: MoatCard,
-    MoatCard.name: MoatCard,
-    HarbingerCard.shortname: HarbingerCard,
-    HarbingerCard.name: HarbingerCard,
-    MerchantCard.shortname: MerchantCard,
-    MerchantCard.name: MerchantCard,
-    VillageCard.shortname: VillageCard,
-    VillageCard.name: VillageCard,
-    MilitiaCard.shortname: MilitiaCard,
-    MilitiaCard.name: MilitiaCard,
-    RemodelCard.shortname: RemodelCard,
-    RemodelCard.name: RemodelCard,
-    SmithyCard.shortname: SmithyCard,
-    SmithyCard.name: SmithyCard,
-    WorkshopCard.shortname: WorkshopCard,
-    WorkshopCard.name: WorkshopCard,
-    MarketCard.shortname: MarketCard,
-    MarketCard.name: MarketCard,
-    MineCard.shortname: MineCard,
-    MineCard.name: MineCard,
-}
+# List of card objects
+CARD_LIST = [
+    CurseCard, EstateCard, DuchyCard, ProvinceCard,
+    CopperCard, SilverCard, GoldCard,
+    CellarCard, ChapelCard, MoatCard,
+    HarbingerCard, MerchantCard, VillageCard,
+    MilitiaCard, RemodelCard, SmithyCard, WorkshopCard,
+    MarketCard, MineCard
+]
+CARD_LOOKUP = {c.shortname: c for c in CARD_LIST} | {c.name: c for c in CARD_LIST}

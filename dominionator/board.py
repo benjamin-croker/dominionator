@@ -37,7 +37,7 @@ class BoardState(object):
             raise NotImplementedError("Only 2 player games are currently implemented")
 
         self.players = [
-            dmp.Player(player_name, i, [dmcl.lookup[card_name]() for card_name in start_cards])
+            dmp.Player(player_name, i, [dmcl.CARD_LOOKUP[card_name]() for card_name in start_cards])
             for i, player_name in enumerate(player_names)
         ]
         self.active_player_i = 0
@@ -54,7 +54,7 @@ class BoardState(object):
         supply_kingdom = {
             CardClass.shortname: [CardClass()] * _kingdom_supply_size(CardClass)
             for CardClass in [
-                dmcl.lookup[card_name] for card_name in kingdom
+                dmcl.CARD_LOOKUP[card_name] for card_name in kingdom
             ]
         }
         self.supply = supply_basic | supply_kingdom

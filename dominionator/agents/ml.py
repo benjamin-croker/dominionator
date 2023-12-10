@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Set, Type, Callable
 
+import dominionator.cards.cardlist as dmcl
 import dominionator.agents.base as dma_base
 import dominionator.agents.bigmoney as dma_bigmoney
 import dominionator.board as dmb
@@ -21,13 +22,17 @@ import dominionator.player as dmp
 
 # There are 26 kingdom and 7 basic = 33 unique cards in total
 NCARDS = 33
-# Define order of cards, used consistently in each part of the vector
+# Define order of cards, used for offsets in the vector
+# All cards, for discarding, gaining, trashing etc
 CARD_OFFSET = {
     '$1': 0,
     '$2': 1,
     # ...
     'AR': 32  # Artisan
 }
+# Action cards only - for "play action card" actions
+
+# Treasure cards only - for "play treasure card" actions
 
 # There are 10 locations in total. Define order of the different location counts
 # within the vector in multiples of NCARDS
