@@ -5,7 +5,7 @@
         "agent": "MlSmithyBigMoney"
       },
       "Player2": {
-        "agent": "BigMoney"
+        "agent": "MlRandom"
       }
     },
     "kingdom": [

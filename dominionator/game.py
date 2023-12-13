@@ -247,7 +247,7 @@ class Game(object):
         self.agents[p1.name].reward_outcomes(p1, self.board)
         self.agents[p1.name].finalise()
         self._stat_log(p2)
-        self.agents[p2.name].reward_outcomes(p1, self.board)
+        self.agents[p2.name].reward_outcomes(p2, self.board)
         self.agents[p2.name].finalise()
 
     def start_main_loop(self):

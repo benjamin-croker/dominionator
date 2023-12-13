@@ -6,6 +6,7 @@ from typing import Set, Type, Callable
 
 import dominionator.agents.base as dma_base
 import dominionator.agents.bigmoney as dma_bigmoney
+import dominionator.agents.random as dma_random
 import dominionator.board as dmb
 import dominionator.player as dmp
 # Constants defining vector structure
@@ -335,4 +336,7 @@ def wrap_deterministic_agent_with_state_logging(agent_class: Type[dma_base]):
 
 MlSmithyBigMoneyAgent = wrap_deterministic_agent_with_state_logging(
     dma_bigmoney.SmithyBigMoneyAgent
+)
+MlRandomAgent = wrap_deterministic_agent_with_state_logging(
+    dma_random.RandomAgent
 )
