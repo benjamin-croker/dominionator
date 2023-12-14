@@ -2,7 +2,7 @@ import numpy as np
 import uuid
 import os
 from pathlib import Path
-from typing import Set, Type, Callable
+from typing import Set, Type, Callable, Tuple
 
 import dominionator.agents.base as dma_base
 import dominionator.agents.bigmoney as dma_bigmoney
@@ -11,6 +11,8 @@ import dominionator.board as dmb
 import dominionator.player as dmp
 # Constants defining vector structure
 from dominionator.agents.vector_spec import *
+
+StateActionVectorTuple = Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
 
 
 class _MlAgent(dma_base.Agent):
@@ -198,6 +200,14 @@ class _MlAgent(dma_base.Agent):
         self.collect_vectors()
         self.truncate_vectors()
 
+    def get_state_action_vectors(self) -> StateActionVectorTuple:
+        return (
+            self._state_array,
+            self._action_mask_array, self._action_selected_array,
+            self._reward_array
+        )
+
+    def write_log_to_disc(self):
         # Log the vectors
         outdir = os.path.join('logs', 'ml_agent', self._agent_id)
         Path(outdir).mkdir(parents=True, exist_ok=True)
